@@ -7,7 +7,17 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Claude Limits Remaining").font(.headline)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Claude Limits Remaining").font(.headline)
+                Spacer()
+                if let plan = store.plan {
+                    Text(PlanName.display(plan))
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.quaternary, in: Capsule())
+                }
+            }
 
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 VStack(alignment: .leading, spacing: 12) {
@@ -75,6 +85,15 @@ struct LimitRowView: View {
                     .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+enum PlanName {
+    // "pro" -> "Pro", "max_5x" -> "Max 5x"; the raw value is an undocumented string, so never assume a fixed set.
+    static func display(_ raw: String) -> String {
+        raw.split(whereSeparator: { $0 == "_" || $0 == "-" || $0 == " " })
+            .map { $0.prefix(1).uppercased() + $0.dropFirst() }
+            .joined(separator: " ")
     }
 }
 

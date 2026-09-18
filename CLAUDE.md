@@ -31,7 +31,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Menu bar label (`73%`, `73%!`, `?`, `…`), launch arguments | `Sources/ClaudeUsageBar/App.swift` |
 | Polling loop, backoff application, status notices, wake handling | `Sources/ClaudeUsageBar/UsageStore.swift` |
 | Endpoint call, response parsing, row titles, `BackoffPolicy`, User-Agent | `Sources/ClaudeUsageBar/UsageAPI.swift` |
-| Token reading and expiry check | `Sources/ClaudeUsageBar/Credentials.swift` |
+| Token reading, expiry check, plan (`subscriptionType`) | `Sources/ClaudeUsageBar/Credentials.swift` |
 | Icon step selection, SVG loading, `--render-icons` | `Sources/ClaudeUsageBar/IconProvider.swift` |
 | Menu bar icons (SVG, used as-is) | `Resources/icons/` |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
@@ -54,6 +54,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 - **Token via `/usr/bin/security`, not `SecItemCopyMatching`.** Keychain "Always Allow" is bound to the caller's code signature. An ad-hoc signed app changes signature on every build and would re-prompt every time; `security` is always the same caller.
 - **Parse with `JSONSerialization`, not `Codable`.** The endpoint is unofficial. Read only needed fields; unknown or missing fields must never crash. `resets_at` has microseconds and an offset, so try the fractional-seconds formatter first, then the plain one. Model-specific limits (`seven_day_opus`/`seven_day_sonnet`, or extra `limits` entries) have only ever been seen as `null`, so that path is untested against real data.
 - **A limit whose `resets_at` is in the past counts as fully available** until the next fetch.
+- **Plan badge** is `claudeAiOauth.subscriptionType` from the same credentials JSON (`"pro"` was the only value seen; other plans' strings are unverified). It is undocumented: treat it as optional, never branch behavior on it, and format it generically (`PlanName.display`). It is not a secret and may be printed by `--check-token`; the tokens still must not be.
 - **Swift 5 language mode, `swift-tools-version:5.9`** so Command Line Tools 15 can build it. The code also builds in Swift 6 mode; keep it that way. Two things exist for that: `locateIconDirectory()` is `nonisolated` (Swift 5 mode rejects a main-actor call in a default argument), and the login toggle passes a **closure** to `Binding(set:)`. Passing a method reference there crashes the Swift 6 compiler.
 - **`Task.sleep` does not advance while the Mac sleeps**, so on wake the loop is rebuilt from an absolute `nextPollAt`.
 - **Login toggle** follows the result of `register()`/`unregister()` and re-reads real status when the panel opens, because status read right after `register()` can lag.

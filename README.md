@@ -3,7 +3,7 @@
 A small native macOS menu bar app that shows how much of your claude.ai subscription limits is **left** (5-hour session and 7-day weekly).
 
 - **Menu bar:** a Clawd gauge icon that matches the remaining amount, plus the remaining session percentage (e.g. `73%`)
-- **Click:** remaining bars for the session, weekly, and per-model weekly limits, time until each resets, Refresh Now, Launch at Login, Quit
+- **Click:** remaining bars for the session, weekly, and per-model weekly limits, time until each resets, your plan (e.g. `Pro`) as a small badge, Refresh Now, Launch at Login, Quit
 
 Every percentage in the app is what is **left**, not what has been used (claude.ai's own usage page shows the used side, so `31% used` there appears as `69%` here).
 
@@ -62,6 +62,7 @@ The "Launch at Login" toggle in the panel uses `SMAppService`. Copy the app to `
 
 - The token is re-read right before every request and is never written to logs or files. The app does not refresh the token with the refresh token.
 - If the token expires, run `claude` once in a terminal and Claude Code will refresh it.
+- The plan badge comes from the `subscriptionType` field of the same keychain entry. It is undocumented, so the badge is simply hidden when the field is missing or unreadable. It appears after the first successful token read.
 - Requests share the same rate limit, so do not run more than one instance (or other widgets using the same API) at the same time.
 
 ### Menu bar states
@@ -101,7 +102,7 @@ The source is `Resources/app-icon.svg`. Build an `iconset` from PNGs of each siz
 | `--mock <used%>` | Makes no API call and shows the given session **used** percentage (`--mock 27` shows 73% left) |
 | `--mock-error <expired\|login\|ratelimit\|offline>` | Shows each error state. Combine with `--mock` to see the case where the last value is kept |
 | `--render-icons <dir>` | Renders the icons with AppKit and saves them as PNGs |
-| `--check-token` | Prints only the token state (valid/expired/not found, source, time left), never the token itself |
+| `--check-token` | Prints only the token state (valid/expired/not found, source, plan, time left), never the token itself |
 | `--api-url <url>` | Points the request at a local server (`127.0.0.1`, `localhost`, `::1`). For testing |
 | `--help` | Prints the usage |
 

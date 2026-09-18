@@ -36,6 +36,7 @@ final class UsageStore: ObservableObject {
     @Published private(set) var status: UsageStatus = .loading
     @Published private(set) var rows: [LimitRow] = []
     @Published private(set) var lastUpdated: Date?
+    @Published private(set) var plan: String?
 
     private let options: LaunchOptions
     private var policy = BackoffPolicy()
@@ -124,6 +125,7 @@ final class UsageStore: ObservableObject {
             status = .expired
             scheduleNormalPoll()
         case .valid(let credentials):
+            plan = credentials.subscriptionType
             let userAgent = await ClaudeVersion.userAgent()
             lastCallAt = Date()
             let outcome = await UsageAPI.fetch(
@@ -164,6 +166,7 @@ final class UsageStore: ObservableObject {
 
     private func applyMock() {
         let now = Date()
+        plan = "pro"
         if let used = options.mockUtilization {
             rows = [
                 LimitRow(id: "five_hour", title: "Session (5h)", utilization: used,

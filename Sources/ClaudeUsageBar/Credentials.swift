@@ -8,6 +8,7 @@ struct Credentials: Sendable {
     let accessToken: String
     let expiresAt: Date?
     let source: Source
+    let subscriptionType: String?
 }
 
 enum TokenState: Sendable {
@@ -36,7 +37,8 @@ enum CredentialsReader {
               let oauth = root["claudeAiOauth"] as? [String: Any],
               let token = oauth["accessToken"] as? String, !token.isEmpty else { return nil }
         let expiresAt = (oauth["expiresAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue / 1000) }
-        let credentials = Credentials(accessToken: token, expiresAt: expiresAt, source: source)
+        let plan = (oauth["subscriptionType"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let credentials = Credentials(accessToken: token, expiresAt: expiresAt, source: source, subscriptionType: plan)
         if let expiresAt, expiresAt < now.addingTimeInterval(expiryMargin) {
             return .expired(source, expiredAt: expiresAt)
         }
@@ -82,7 +84,7 @@ enum CredentialsReader {
         switch await read() {
         case .valid(let c):
             let remaining = c.expiresAt.map { "\(Int($0.timeIntervalSinceNow))s" } ?? "unknown"
-            print("state=valid source=\(c.source.rawValue) expiresIn=\(remaining) tokenLength=\(c.accessToken.count)")
+            print("state=valid source=\(c.source.rawValue) plan=\(c.subscriptionType ?? "unknown") expiresIn=\(remaining) tokenLength=\(c.accessToken.count)")
             return 0
         case .expired(let source, let expiredAt):
             let ago = expiredAt.map { "\(Int(-$0.timeIntervalSinceNow))s ago" } ?? "unknown"
