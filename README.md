@@ -103,6 +103,9 @@ The source is `Resources/app-icon.svg`. Build an `iconset` from PNGs of each siz
 | `--render-icons <dir>` | Renders the icons with AppKit and saves them as PNGs |
 | `--check-token` | Prints only the token state (valid/expired/not found, source, time left), never the token itself |
 | `--api-url <url>` | Points the request at a local server (`127.0.0.1`, `localhost`, `::1`). For testing |
+| `--help` | Prints the usage |
+
+Unknown or malformed arguments (a misspelled flag, a missing value, `--api-url` pointing anywhere but loopback) print an error and exit with code 2 instead of starting the app, so a typo can never silently start real mode and call the API. When scripting launches, pass each argument as a separate word (`--mock 27`, not `"--mock 27"`).
 
 `Fixtures/usage_sample.json` is a sample of a real response reduced to the structure needed for parsing (amounts and usage history removed).
 

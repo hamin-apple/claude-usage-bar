@@ -46,6 +46,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 - Never run two real-mode instances at once (they share one rate limit). Real API calls are for final integration checks only; use `--mock` and a local fake server for everything else.
 - Menu bar SVGs are used exactly as supplied: no recoloring in code, `isTemplate = false`. Icon steps come from scanning the folder, not a hardcoded list.
 - `--api-url` must stay restricted to loopback hosts so the token can only go to the real endpoint or localhost.
+- **Launch arguments are strict.** Unknown or malformed arguments exit with code 2 (`LaunchOptions.parse`). Keep it that way: a misparsed flag used to fall through to real mode and call the API. When scripting launches, pass each argument as a separate word. In zsh an unquoted `$args` is not word-split, so `"$BIN" $args` sends `--mock 27` as one argument (now an error, previously a silent real-mode start that hit the API several times in a minute).
 - UI strings are English.
 
 ## Design decisions and why
