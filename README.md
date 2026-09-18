@@ -7,12 +7,18 @@ A small native macOS menu bar app that shows how much of your claude.ai subscrip
 
 Every percentage in the app is what is **left**, not what has been used (claude.ai's own usage page shows the used side, so `31% used` there appears as `69%` here).
 
-## Notice: unofficial API
+## Important notices
 
-This app uses an endpoint that is not in Anthropic's public documentation (`https://api.anthropic.com/api/oauth/usage`).
-It can change or be blocked at any time, and I have not checked whether using it is allowed by the terms of service.
-The app reads only the values it needs and ignores unknown fields, but if the format changes a lot, values may stop showing.
-It is a personal tool and is not affiliated with Anthropic.
+Read these before using the app.
+
+- **Independent project.** It is not made, endorsed, or supported by Anthropic. "Claude" is a trademark of Anthropic, PBC.
+- **Unofficial API.** The app calls `https://api.anthropic.com/api/oauth/usage`, which is not in Anthropic's public documentation. It can change or stop working at any time.
+  The app reads only the values it needs and ignores unknown fields, but if the format changes a lot, values may stop showing.
+- **Terms of service are not verified.** The app borrows the OAuth token that Claude Code stores in your keychain and uses it outside Claude Code.
+  I have not confirmed that Anthropic's terms allow this, and they may not. Read the current terms yourself. **Use this app at your own risk**, including any consequence for your Claude account.
+- **Request identity.** To be accepted by the endpoint, the app sends `User-Agent: claude-code/<version>`, the same identifier the Claude Code CLI uses, so its requests look like Claude Code's.
+  If you are not comfortable with that, do not use this app.
+- **Token handling.** The token is read right before each request, kept only in memory, never written to logs or files, and never refreshed by the app. The relevant code is short: `Credentials.swift` and `UsageAPI.swift`.
 
 ## Requirements
 
@@ -122,6 +128,9 @@ Fixtures/usage_sample.json
 Scripts/bundle.sh
 ```
 
-## Artwork
+## License
 
-The Clawd icons in `Resources/icons/` and the app icon (`AppIcon.icns`, `app-icon.svg`) were supplied by the author. Confirm the usage rights for this artwork before making the repository public.
+The source code is released under the [MIT License](LICENSE).
+
+The artwork is **not** covered by that license: the Clawd menu bar icons (`Resources/icons/`) and the app icon (`AppIcon.icns`, `app-icon.svg`) depict the Claude Code mascot, which belongs to Anthropic, PBC.
+They are included only so the app runs for personal use. If you redistribute the app or a fork, replace them with your own artwork. See [NOTICE.md](NOTICE.md).
