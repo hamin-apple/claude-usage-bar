@@ -20,11 +20,11 @@ enum UsageStatus: Equatable {
     var notice: String? {
         switch self {
         case .loading, .ok: return nil
-        case .expired: return "터미널에서 `claude`를 한 번 실행하면 복구됩니다"
-        case .loginRequired: return "Claude Code에 구독 계정으로 로그인하세요"
-        case .rateLimited: return "요청 제한에 걸렸습니다. 잠시 후 자동으로 다시 시도합니다"
+        case .expired: return "Token expired. Run \"claude\" once in Terminal to refresh it."
+        case .loginRequired: return "Sign in to Claude Code with your subscription account."
+        case .rateLimited: return "Rate limited. Will retry automatically shortly."
         case .offline(let code):
-            return code.map { "연결할 수 없습니다 (HTTP \($0))" } ?? "연결할 수 없습니다"
+            return code.map { "Can't connect (HTTP \($0))" } ?? "Can't connect"
         }
     }
 }
@@ -166,11 +166,11 @@ final class UsageStore: ObservableObject {
         let now = Date()
         if let used = options.mockUtilization {
             rows = [
-                LimitRow(id: "five_hour", title: "세션 (5시간)", utilization: used,
+                LimitRow(id: "five_hour", title: "Session (5h)", utilization: used,
                          resetsAt: now.addingTimeInterval(2 * 3600 + 44 * 60)),
-                LimitRow(id: "seven_day", title: "주간 (7일)", utilization: 41,
+                LimitRow(id: "seven_day", title: "Weekly (7d)", utilization: 41,
                          resetsAt: now.addingTimeInterval(4 * 86400 + 9 * 3600)),
-                LimitRow(id: "seven_day_sonnet", title: "주간 · Sonnet", utilization: 12,
+                LimitRow(id: "seven_day_sonnet", title: "Weekly · Sonnet", utilization: 12,
                          resetsAt: now.addingTimeInterval(4 * 86400 + 9 * 3600)),
             ]
             lastUpdated = now

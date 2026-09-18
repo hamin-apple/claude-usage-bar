@@ -1,125 +1,127 @@
 # Claude Usage Bar
 
-macOS 메뉴바에 claude.ai 구독 한도(5시간 세션, 7일 주간)의 **남은 양**을 보여주는 작은 네이티브 앱.
+A small native macOS menu bar app that shows how much of your claude.ai subscription limits is **left** (5-hour session and 7-day weekly).
 
-- 메뉴바: 잔량에 맞는 Clawd 게이지 아이콘 + 세션 잔량 퍼센트 (예: `73%`)
-- 클릭: 세션, 주간, 모델별 주간 한도의 잔량 막대와 리셋까지 남은 시간, 새로고침, 로그인 시 실행, 종료
+- **Menu bar:** a Clawd gauge icon that matches the remaining amount, plus the remaining session percentage (e.g. `73%`)
+- **Click:** remaining bars for the session, weekly, and per-model weekly limits, time until each resets, Refresh Now, Launch at Login, Quit
 
-## 고지: 비공식 API
+Every percentage in the app is what is **left**, not what has been used (claude.ai's own usage page shows the used side, so `31% used` there appears as `69%` here).
 
-이 앱은 공식 문서에 없는 엔드포인트(`https://api.anthropic.com/api/oauth/usage`)를 사용한다.
-언제든 응답 형식이 바뀌거나 막힐 수 있고, 사용이 약관상 허용되는지는 확인하지 않았다.
-앱은 응답에서 필요한 값만 꺼내고 모르는 필드는 무시하지만, 형식이 크게 바뀌면 값이 표시되지 않을 수 있다.
-Anthropic과 무관한 개인 도구다.
+## Notice: unofficial API
 
-## 전제 조건
+This app uses an endpoint that is not in Anthropic's public documentation (`https://api.anthropic.com/api/oauth/usage`).
+It can change or be blocked at any time, and I have not checked whether using it is allowed by the terms of service.
+The app reads only the values it needs and ignores unknown fields, but if the format changes a lot, values may stop showing.
+It is a personal tool and is not affiliated with Anthropic.
 
-- Apple Silicon Mac, macOS 13 이상
-- Swift 5.9 이상 (Command Line Tools 15 이상이면 된다. Xcode 불필요). 확인한 버전은 Swift 6.3.3이며, 5.9 미만은 시험하지 않았다.
-  Swift 6 언어 모드로 빌드하려면 `Package.swift`의 `swiftLanguageVersions: [.v5]`를 지우고 `swift-tools-version`을 6.0으로 올린다(코드는 두 모드에서 모두 오류 없이 빌드된다).
-- **Claude Code가 설치되어 있고 구독 계정으로 로그인되어 있어야 한다.**
-  이 앱에는 자체 로그인이 없고, Claude Code가 macOS 키체인에 저장한 OAuth 토큰(`Claude Code-credentials`)을 빌려 쓴다.
-  키체인에서 못 읽으면 `~/.claude/.credentials.json`을 읽는다.
+## Requirements
 
-## 빌드와 실행
+- Apple Silicon Mac, macOS 13 or later
+- Swift 5.9 or later (Command Line Tools 15+ is enough; Xcode is not required). Tested with Swift 6.3.3; versions below 5.9 were not tried.
+  To build in Swift 6 language mode, remove `swiftLanguageVersions: [.v5]` from `Package.swift` and raise `swift-tools-version` to 6.0 (the code builds without errors in both modes).
+- **Claude Code installed and signed in with your subscription account.**
+  The app has no login of its own. It borrows the OAuth token that Claude Code stores in the macOS keychain (`Claude Code-credentials`),
+  and falls back to `~/.claude/.credentials.json` if the keychain read fails.
+
+## Build and run
 
 ```bash
 ./Scripts/bundle.sh
 open build/ClaudeUsageBar.app
 ```
 
-`bundle.sh`는 `swift build -c release`, `.app` 조립, ad-hoc 코드 서명(`codesign --sign -`)까지 한 번에 한다.
-Dock에는 아이콘이 뜨지 않는다(`LSUIElement`).
-개발 중 바이너리를 직접 실행할 때는 `swift build` 후 `.build/debug/ClaudeUsageBar`를 실행한다.
+`bundle.sh` runs `swift build -c release`, assembles the `.app`, and ad-hoc signs it (`codesign --sign -`) in one go.
+No Dock icon appears (`LSUIElement`).
+To run the binary directly during development, use `swift build` and then `.build/debug/ClaudeUsageBar`.
 
-### 첫 실행 시 키체인 허용
+### Keychain prompt on first run
 
-처음 토큰을 읽을 때 키체인 접근 팝업이 한 번 뜬다. **"항상 허용"**을 선택한다.
-토큰은 앱이 아니라 `/usr/bin/security`를 통해 읽기 때문에, ad-hoc 서명 앱을 다시 빌드해도 허용이 무효가 되지 않는다.
+The first time the token is read, a keychain access prompt appears once. Choose **"Always Allow"**.
+The token is read through `/usr/bin/security` rather than by the app itself, so rebuilding the ad-hoc signed app does not invalidate the permission.
 
-### 로그인 시 실행
+### Launch at Login
 
-패널의 "로그인 시 실행" 토글은 `SMAppService`를 쓴다. 앱을 `/Applications`로 옮긴 뒤 켜는 것을 권장한다.
+The "Launch at Login" toggle in the panel uses `SMAppService`. Copy the app to `/Applications` before turning it on.
 
-## 동작
+## Behavior
 
-| 항목 | 값 |
+| Item | Value |
 |---|---|
-| 조회 주기 | 180초 (앱 시작 직후 한 번 + 이후 180초마다) |
-| 429 응답 | `Retry-After`와 현재 백오프 중 긴 쪽만큼 대기. 백오프는 300초에서 시작해 연속 429마다 2배, 최대 1800초. 첫 성공 시 초기화 |
-| 429 백오프 중 | 수동 새로고침 포함 어떤 호출도 하지 않는다 |
-| 그 외 오류 | 180초 주기로 재시도, 마지막 성공 값은 계속 표시 |
-| 토큰 만료/없음 | API를 호출하지 않고 180초마다 토큰만 다시 읽는다 |
-| 잠자기 복귀 | 예정 시각이 지났으면 바로 한 번 조회 |
+| Polling interval | 180 seconds (once right after launch, then every 180 seconds) |
+| HTTP 429 | Waits the longer of `Retry-After` and the current backoff. Backoff starts at 300 seconds, doubles on each consecutive 429, and caps at 1800 seconds. Reset on the first success |
+| During a 429 backoff | No request is made, including manual refresh |
+| Other errors | Retries on the normal 180-second cycle and keeps showing the last successful value |
+| Token expired or missing | No API call; only re-reads the token every 180 seconds |
+| Wake from sleep | Fetches right away if the scheduled time has passed |
 
-- 토큰은 매 조회 직전에 새로 읽고, 로그나 파일에 남기지 않는다. 앱은 refresh token으로 토큰을 갱신하지 않는다.
-- 토큰이 만료되면 터미널에서 `claude`를 한 번 실행하면 Claude Code가 갱신한다.
-- 같은 요청 제한을 나눠 쓰므로 앱(또는 같은 API를 쓰는 다른 위젯)을 여러 개 동시에 실행하지 않는다.
+- The token is re-read right before every request and is never written to logs or files. The app does not refresh the token with the refresh token.
+- If the token expires, run `claude` once in a terminal and Claude Code will refresh it.
+- Requests share the same rate limit, so do not run more than one instance (or other widgets using the same API) at the same time.
 
-### 메뉴바 표시
+### Menu bar states
 
-| 상태 | 표시 |
+| State | Display |
 |---|---|
-| 로딩 | 흐린 아이콘 + `…` |
-| 정상 | 잔량 아이콘 + `73%` |
-| 요청 제한, 오프라인/기타 오류 | 마지막 값 유지 + 뒤에 `!` (예: `73%!`) |
-| 토큰 만료, 로그인 필요, 값 없음 | 에러 아이콘 + `?` |
+| Loading | Dimmed icon + `…` |
+| OK | Remaining icon + `73%` |
+| Rate limited, offline, or other error | Last value kept + `!` after it (e.g. `73%!`) |
+| Token expired, sign-in needed, or no value | Error icon + `?` |
 
-`resets_at`이 이미 지난 한도는 사용량 0으로 계산한다.
+A limit whose `resets_at` is already in the past is treated as fully available (0% used) until the next fetch.
 
-## 아이콘 교체
+## Replacing the menu bar icons
 
-아이콘은 `Resources/icons/`의 SVG를 그대로 쓴다(색과 모양을 코드에서 바꾸지 않는다).
+The icons are the SVGs in `Resources/icons/`, used as they are (the code never recolors or reshapes them).
 
-- `icon-<숫자>.svg`: 잔량 단계별 아이콘. 잔량에 **가장 가까운 숫자**의 파일이 표시된다(동률이면 낮은 쪽). 폴더를 스캔하므로 단계를 늘리거나 줄여도 코드 수정이 필요 없다.
-- `icon-error.svg`: 에러 상태 아이콘. 없으면 마지막 아이콘을 알파 40%로 쓴다.
-- 높이는 메뉴바 18pt에 맞추고 가로세로 비율은 SVG의 viewBox를 따른다.
+- `icon-<number>.svg`: one icon per remaining-amount step. The file whose number is **closest** to the remaining percentage is shown (ties go to the lower one). The folder is scanned, so adding or removing steps needs no code change.
+- `icon-error.svg`: the error-state icon. If it is missing, the last icon is used at 40% alpha.
+- Height is fixed at 18 pt in the menu bar and the aspect ratio follows the SVG's viewBox.
 
-파일을 바꾼 뒤 `./Scripts/bundle.sh`로 다시 빌드한다. AppKit이 일부 SVG 기능(필터, CSS 스타일, 마스크 등)을 못 그릴 수 있으니 렌더링 결과를 확인한다.
+After changing files, rebuild with `./Scripts/bundle.sh`. AppKit may not draw some SVG features (filters, CSS styles, masks), so check the rendering:
 
 ```bash
-.build/debug/ClaudeUsageBar --render-icons /tmp/icons   # 모든 아이콘을 PNG(높이 512px)와 확인용 sheet.png로 저장
+.build/debug/ClaudeUsageBar --render-icons /tmp/icons   # saves every icon as a PNG (512 px tall) plus a contact sheet, sheet.png
 ```
 
-## 앱 아이콘
+## App icon
 
-Finder와 로그인 항목에 보이는 앱 아이콘은 `Resources/AppIcon.icns`다(`Info.plist`의 `CFBundleIconFile`이 가리킨다). 메뉴바 아이콘과는 별개다.
-원본은 `Resources/app-icon.svg`이고, 크기별 PNG(16~1024px)로 `iconset`을 만들어 `iconutil -c icns <이름>.iconset -o Resources/AppIcon.icns`로 변환한다. 교체한 뒤 `./Scripts/bundle.sh`로 다시 빌드한다.
+The app icon shown in Finder and Login Items is `Resources/AppIcon.icns` (referenced by `CFBundleIconFile` in `Info.plist`). It is separate from the menu bar icons.
+The source is `Resources/app-icon.svg`. Build an `iconset` from PNGs of each size (16 to 1024 px) and convert it with `iconutil -c icns <name>.iconset -o Resources/AppIcon.icns`, then rebuild with `./Scripts/bundle.sh`.
 
-## 테스트용 실행 인자
+## Test launch arguments
 
-| 인자 | 설명 |
+| Argument | Description |
 |---|---|
-| `--mock <사용률>` | API를 호출하지 않고 해당 세션 사용률로 표시 (`--mock 27` → 잔량 73%) |
-| `--mock-error <expired\|login\|ratelimit\|offline>` | 각 오류 상태 확인. `--mock`과 함께 쓰면 마지막 값이 유지되는 경우를 볼 수 있다 |
-| `--render-icons <dir>` | 아이콘을 AppKit으로 렌더링해 PNG로 저장 |
-| `--check-token` | 토큰 상태(유효/만료/없음, 출처, 남은 시간)만 출력한다. 토큰 값은 출력하지 않는다 |
-| `--api-url <url>` | 조회 주소를 로컬 서버(`127.0.0.1`, `localhost`, `::1`)로 바꾼다. 테스트용 |
+| `--mock <used%>` | Makes no API call and shows the given session **used** percentage (`--mock 27` shows 73% left) |
+| `--mock-error <expired\|login\|ratelimit\|offline>` | Shows each error state. Combine with `--mock` to see the case where the last value is kept |
+| `--render-icons <dir>` | Renders the icons with AppKit and saves them as PNGs |
+| `--check-token` | Prints only the token state (valid/expired/not found, source, time left), never the token itself |
+| `--api-url <url>` | Points the request at a local server (`127.0.0.1`, `localhost`, `::1`). For testing |
 
-`Fixtures/usage_sample.json`은 실제 응답에서 파싱에 필요한 구조만 남긴 샘플이다(금액과 사용 내역은 제거).
+`Fixtures/usage_sample.json` is a sample of a real response reduced to the structure needed for parsing (amounts and usage history removed).
 
-## 메모리
+## Memory
 
-`ps -o rss=` 결과: mock 모드 **72~77MB**, 실제 모드(첫 조회 후, 패널 닫힘) **약 81~88MB**. 목표였던 30MB에는 못 미친다.
-같은 프로세스의 실제 물리 메모리(`footprint`, `vmmap -summary`)는 mock 모드 약 14MB, 실제 모드 약 16~26MB다. RSS에는 SwiftUI/AppKit 등 시스템 프레임워크의 공유 페이지가 포함되어 크게 나온다.
-패널을 처음 열 때 물리 메모리가 일시적으로 100MB 안팎까지 올랐다가 닫으면 20MB대로 돌아온다(측정: 최대 약 102MB → 26MB, 30초간 안정).
+`ps -o rss=`: **72-77 MB** in mock mode and **about 81-88 MB** in real mode (after the first fetch, panel closed). This misses the original 30 MB goal.
+The process's physical memory (`footprint`, `vmmap -summary`) is about 14 MB in mock mode and about 16-26 MB in real mode. RSS looks large because it includes shared pages of system frameworks such as SwiftUI and AppKit.
+When the panel is first opened, physical memory briefly rises to around 100 MB and returns to the 20 MB range after it closes (measured: peak about 102 MB, then 26 MB, stable over 30 seconds).
 
-## 프로젝트 구조
+## Project layout
 
 ```
 Package.swift
 Sources/ClaudeUsageBar/
-  App.swift            @main, MenuBarExtra, 실행 인자, 메뉴바 라벨
-  UsageStore.swift     상태, 폴링 루프, 백오프 적용
-  UsageAPI.swift       엔드포인트 호출, 응답 해석, 백오프 정책, User-Agent
-  Credentials.swift    토큰 읽기, 만료 검사
-  IconProvider.swift   잔량별 SVG 선택/로드/캐시, --render-icons
-  PopoverView.swift    클릭 시 패널
-Resources/Info.plist, Resources/icons/ (메뉴바), Resources/AppIcon.icns, Resources/app-icon.svg (앱 아이콘)
+  App.swift            @main, MenuBarExtra, launch arguments, menu bar label
+  UsageStore.swift     state, polling loop, backoff handling
+  UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
+  Credentials.swift    token reading, expiry check
+  IconProvider.swift   picks/loads/caches the SVG for the remaining amount, --render-icons
+  PopoverView.swift    the panel shown on click
+Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
 Scripts/bundle.sh
 ```
 
-## 아트워크
+## Artwork
 
-`Resources/icons/`의 Clawd 아이콘과 앱 아이콘(`AppIcon.icns`, `app-icon.svg`)은 사용자가 제공한 파일이다. 저장소를 공개하기 전에 아트워크의 사용 권리를 먼저 확인할 것.
+The Clawd icons in `Resources/icons/` and the app icon (`AppIcon.icns`, `app-icon.svg`) were supplied by the author. Confirm the usage rights for this artwork before making the repository public.

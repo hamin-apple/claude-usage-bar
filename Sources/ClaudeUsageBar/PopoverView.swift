@@ -7,12 +7,12 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Claude 사용량").font(.headline)
+            Text("Claude Limits Remaining").font(.headline)
 
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 VStack(alignment: .leading, spacing: 12) {
                     if store.rows.isEmpty && store.status == .loading {
-                        Text("불러오는 중…").foregroundStyle(.secondary)
+                        Text("Loading…").foregroundStyle(.secondary)
                     }
                     ForEach(store.rows) { row in
                         LimitRowView(row: row, now: context.date)
@@ -31,9 +31,9 @@ struct PopoverView: View {
 
             HStack {
                 if let updated = store.lastUpdated {
-                    Text("마지막 업데이트 \(updated, style: .time)")
+                    Text("Last updated \(updated, style: .time)")
                 } else {
-                    Text("아직 업데이트되지 않음")
+                    Text("Not updated yet")
                 }
                 Spacer()
             }
@@ -41,10 +41,10 @@ struct PopoverView: View {
             .foregroundStyle(.secondary)
 
             HStack {
-                Button(store.isBackingOff ? "대기 중…" : "지금 새로고침") { store.refresh() }
+                Button(store.isBackingOff ? "Waiting…" : "Refresh Now") { store.refresh() }
                     .disabled(store.isBackingOff)
                 Spacer()
-                Button("종료") { NSApplication.shared.terminate(nil) }
+                Button("Quit") { NSApplication.shared.terminate(nil) }
             }
             .controlSize(.small)
 
@@ -65,7 +65,7 @@ struct LimitRowView: View {
             HStack {
                 Text(row.title)
                 Spacer()
-                Text(remaining.map { "\(Int($0.rounded()))%" } ?? "–").monospacedDigit()
+                Text(remaining.map { "\(Int($0.rounded()))% left" } ?? "–").monospacedDigit()
             }
             ProgressView(value: (remaining ?? 0) / 100)
                 .tint((remaining ?? 100) <= 20 ? .red : .accentColor)
@@ -81,14 +81,14 @@ struct LimitRowView: View {
 enum ResetText {
     static func format(until date: Date, now: Date) -> String {
         let seconds = Int(date.timeIntervalSince(now))
-        guard seconds > 0 else { return "리셋됨" }
+        guard seconds > 0 else { return "Reset" }
         let totalMinutes = seconds / 60
         let days = totalMinutes / 1440
         let hours = (totalMinutes % 1440) / 60
         let minutes = totalMinutes % 60
-        if days >= 1 { return "\(days)일 \(hours)시간 후 리셋" }
-        if hours >= 1 { return "\(hours)시간 \(minutes)분 후 리셋" }
-        return "\(max(minutes, 1))분 후 리셋"
+        if days >= 1 { return "Resets in \(days)d \(hours)h" }
+        if hours >= 1 { return "Resets in \(hours)h \(minutes)m" }
+        return "Resets in \(max(minutes, 1))m"
     }
 }
 
@@ -98,27 +98,36 @@ struct LoginItemToggle: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Toggle("로그인 시 실행", isOn: Binding(
-                get: { enabled },
-                set: { newValue in
-                    do {
-                        if newValue {
-                            try SMAppService.mainApp.register()
-                        } else {
-                            try SMAppService.mainApp.unregister()
-                        }
-                        errorText = nil
-                    } catch {
-                        errorText = error.localizedDescription
-                    }
-                    enabled = SMAppService.mainApp.status == .enabled
-                }
-            ))
-            .toggleStyle(.switch)
-            .controlSize(.small)
+            Toggle("Launch at Login", isOn: Binding(get: { enabled }, set: { change(to: $0) }))
+                .toggleStyle(.switch)
+                .controlSize(.small)
             if let errorText {
                 Text(errorText).font(.caption).foregroundStyle(.red)
             }
         }
+        .onAppear(perform: refresh)
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in refresh() }
+    }
+
+    // The status read right after register() can lag, so the toggle follows the call's result instead.
+    private func change(to newValue: Bool) {
+        do {
+            if newValue {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+            enabled = newValue
+            let needsApproval = newValue && SMAppService.mainApp.status == .requiresApproval
+            errorText = needsApproval ? "Approval needed in System Settings > General > Login Items" : nil
+        } catch {
+            errorText = error.localizedDescription
+            refresh()
+        }
+    }
+
+    private func refresh() {
+        let status = SMAppService.mainApp.status
+        enabled = status == .enabled || status == .requiresApproval
     }
 }

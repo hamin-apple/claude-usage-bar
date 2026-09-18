@@ -83,15 +83,15 @@ enum UsageAPI {
         func limit(kind: String) -> [String: Any]? { limits.first { ($0["kind"] as? String) == kind } }
 
         var rows: [LimitRow] = []
-        if let row = row(id: "five_hour", title: "세션 (5시간)", window: root["five_hour"] as? [String: Any], fallback: limit(kind: "session")) {
+        if let row = row(id: "five_hour", title: "Session (5h)", window: root["five_hour"] as? [String: Any], fallback: limit(kind: "session")) {
             rows.append(row)
         }
-        if let row = row(id: "seven_day", title: "주간 (7일)", window: root["seven_day"] as? [String: Any], fallback: limit(kind: "weekly_all")) {
+        if let row = row(id: "seven_day", title: "Weekly (7d)", window: root["seven_day"] as? [String: Any], fallback: limit(kind: "weekly_all")) {
             rows.append(row)
         }
         let modelWindows: [(key: String, title: String)] = [
-            ("seven_day_opus", "주간 · Opus"),
-            ("seven_day_sonnet", "주간 · Sonnet"),
+            ("seven_day_opus", "Weekly · Opus"),
+            ("seven_day_sonnet", "Weekly · Sonnet"),
         ]
         var modelRows: [LimitRow] = []
         for (key, title) in modelWindows {
@@ -103,7 +103,7 @@ enum UsageAPI {
         if modelRows.isEmpty {
             for entry in limits {
                 guard let kind = entry["kind"] as? String, kind != "session", kind != "weekly_all",
-                      let row = row(id: "limit-\(kind)", title: "주간 · \((entry["scope"] as? String) ?? kind)",
+                      let row = row(id: "limit-\(kind)", title: "Weekly · \((entry["scope"] as? String) ?? kind)",
                                     window: nil, fallback: entry) else { continue }
                 modelRows.append(row)
             }
