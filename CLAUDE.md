@@ -68,7 +68,9 @@ There is no test target. Verification used:
 - Compiling `UsageAPI.swift` with a small `main.swift` to check parsing against `Fixtures/usage_sample.json` and `BackoffPolicy` sequences.
 - Building in both language modes. To check Swift 6: copy the repo somewhere temporary, set `swift-tools-version:6.0`, delete the `swiftLanguageVersions` line, run `swift build`.
 
-Not verified: real wake-from-sleep behavior, recovery after a real 429, Swift versions below 5.9, Intel Macs, keychain item names when `CLAUDE_CONFIG_DIR` is customized.
+Observed once, cause not confirmed: after a burst of accidental real-mode launches (see the launch-arguments constraint above) the menu bar showed the error icon with `?` and recovered on its own within minutes without a restart. That is consistent with a 429 followed by the backoff retry, but the panel notice was not captured, so the 429 path is not proven end to end.
+
+Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recovery, Swift versions below 5.9, Intel Macs, keychain item names when `CLAUDE_CONFIG_DIR` is customized.
 
 ## Troubleshooting
 
