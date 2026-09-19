@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Maintenance notes for Claude Code (and humans) working on this repo. User-facing docs are in `README.md`; read it first for behavior, launch arguments, and icon replacement.
+Maintenance notes for Claude Code (and humans) working on this repo. User-facing docs are in `README.md` (Korean translation: `README-ko.md`; update both together); read it first for behavior, launch arguments, and icon replacement.
 
 ## What this is
 
