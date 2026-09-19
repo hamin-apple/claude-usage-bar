@@ -1,5 +1,7 @@
 # Claude Usage Bar
 
+**English** | [한국어](README-ko.md)
+
 A small native macOS menu bar app that shows how much of your claude.ai subscription limits is **left** (5-hour session and 7-day weekly).
 
 - **Menu bar:** a Clawd gauge icon that matches the remaining amount, plus the remaining session percentage (e.g. `73%`)
