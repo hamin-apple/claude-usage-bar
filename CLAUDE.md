@@ -65,7 +65,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 
 ## Testing
 
-There is no test target. Verification used:
+There is no test target. `.github/workflows/ci.yml` runs on every PR and push to `main` (macOS runner): Swift 5 and Swift 6 mode builds, launch-argument rejection (exit 2), `--render-icons` for every SVG, the npx installer's argument check and `npm pack` contents, and a full `npx --yes . --no-open` install. CI must never start the app in real mode or read a token. Manual verification used:
 
 - `--mock` / `--mock-error` and `--render-icons` for UI and icons.
 - A local fake HTTP server plus `--api-url http://127.0.0.1:<port>/` to exercise the real polling loop: 200 cadence (>= 180 s), 429 (single request, no retry during backoff), 503, garbage body, refused connection.

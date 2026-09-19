@@ -1,0 +1,102 @@
+# Build checks only. Nothing here reads a token or calls the usage API:
+# the app is never started in real mode (only --render-icons and argument
+# rejection, which exit before any request), and the installer runs with --no-open.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, icons, npx install
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: swift --version
+
+      - name: Build (Swift 5 language mode)
+        run: swift build
+
+      - name: Reject unknown or malformed launch arguments
+        run: |
+          set -u
+          fail=0
+          check() {
+            if .build/debug/ClaudeUsageBar "$@" >/dev/null 2>&1; then code=0; else code=$?; fi
+            if [ "$code" != 2 ]; then echo "::error::'$*' exited $code, expected 2"; fail=1; else echo "ok: $* -> 2"; fi
+          }
+          check --bogus
+          check --mock abc
+          check --mock-error nope
+          check --api-url https://example.com/
+          check "--mock 27"
+          exit $fail
+
+      - name: Render every menu bar icon
+        run: |
+          out="$RUNNER_TEMP/icons"
+          .build/debug/ClaudeUsageBar --render-icons "$out"
+          svgs=$(ls Resources/icons/*.svg | wc -l | tr -d ' ')
+          pngs=$(ls "$out"/*.png | grep -v sheet.png | wc -l | tr -d ' ')
+          echo "svg=$svgs png=$pngs"
+          test "$svgs" = "$pngs"
+          test -s "$out/sheet.png"
+
+      - name: npx installer rejects unknown arguments
+        run: |
+          if bash Scripts/npx-install.sh --bogus; then code=0; else code=$?; fi
+          test "$code" = 2
+
+      - name: npm package contains only build inputs
+        run: |
+          npm pack --dry-run --json > "$RUNNER_TEMP/pack.json"
+          node -e '
+            const files = require(process.argv[1])[0].files.map(f => f.path);
+            const need = ["Package.swift", "Scripts/bundle.sh", "Scripts/npx-install.sh", "Resources/Info.plist", "Resources/AppIcon.icns"];
+            const missing = need.filter(f => !files.includes(f));
+            const stray = files.filter(f => /^(\.build|build|Fixtures|docs)\//.test(f));
+            if (missing.length || stray.length) { console.error({ missing, stray }); process.exit(1); }
+            console.log(files.length + " files ok");
+          ' "$RUNNER_TEMP/pack.json"
+
+      - name: Install through npx (no launch)
+        run: npx --yes . --no-open
+
+      - name: Check the installed app
+        run: |
+          app=/Applications/ClaudeUsageBar.app
+          codesign --verify --verbose=2 "$app"
+          test -x "$app/Contents/MacOS/ClaudeUsageBar"
+          test -s "$app/Contents/Resources/AppIcon.icns"
+          ls "$app/Contents/Resources/icons/"*.svg
+          /usr/libexec/PlistBuddy -c "Print :LSUIElement" "$app/Contents/Info.plist"
+
+  swift6:
+    name: Build (Swift 6 language mode)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Switch the package to Swift 6 mode
+        run: |
+          sed -i '' 's|^// swift-tools-version:5.9$|// swift-tools-version:6.0|' Package.swift
+          perl -0pi -e 's/,\s*swiftLanguageVersions: \[\.v5\]//' Package.swift
+          cat Package.swift
+          grep -q 'swift-tools-version:6.0' Package.swift
+          ! grep -q swiftLanguageVersions Package.swift
+
+      - name: Build
+        run: swift build
