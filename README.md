@@ -7,6 +7,14 @@ A small native macOS menu bar app that shows how much of your claude.ai subscrip
 - **Menu bar:** a Clawd gauge icon that matches the remaining amount, plus the remaining session percentage (e.g. `73%`)
 - **Click:** remaining bars for the session, weekly, and per-model weekly limits, time until each resets, your plan (e.g. `Pro`) as a small badge, Refresh Now, Launch at Login, Quit
 
+<p>
+  <img src="docs/screenshots/menu-bar.png" alt="Menu bar item showing the Clawd gauge icon and 73%" width="68">
+  <br>
+  <img src="docs/screenshots/panel.png" alt="Panel with remaining session, weekly, and Sonnet weekly limits, reset times, and a Pro badge" width="301">
+</p>
+
+<sub>Screenshots taken in mock mode (`--mock 27`), not real account data.</sub>
+
 Every percentage in the app is what is **left**, not what has been used (claude.ai's own usage page shows the used side, so `31% used` there appears as `69%` here).
 
 ## Important notices
@@ -182,6 +190,7 @@ Sources/ClaudeUsageBar/
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
+docs/screenshots/        README screenshots (mock mode)
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
