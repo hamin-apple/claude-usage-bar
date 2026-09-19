@@ -2,6 +2,13 @@
 
 **English** | [한국어](README-ko.md)
 
+[![License: MIT (code only)](https://img.shields.io/badge/license-MIT%20%28code%20only%29-blue)](LICENSE)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
+![Apple Silicon only](https://img.shields.io/badge/Apple%20Silicon-only-lightgrey)
+![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)
+[![Install with npx](https://img.shields.io/badge/install-npx-CB3837?logo=npm)](#install-with-npx)
+[![Unofficial: not affiliated with Anthropic](https://img.shields.io/badge/unofficial-not%20affiliated%20with%20Anthropic-orange)](#important-notices)
+
 A small native macOS menu bar app that shows how much of your claude.ai subscription limits is **left** (5-hour session and 7-day weekly).
 
 - **Menu bar:** a Clawd gauge icon that matches the remaining amount, plus the remaining session percentage (e.g. `73%`)

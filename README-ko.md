@@ -2,6 +2,13 @@
 
 [English](README.md) | **한국어**
 
+[![License: MIT (code only)](https://img.shields.io/badge/license-MIT%20%28code%20only%29-blue)](LICENSE)
+![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
+![Apple Silicon only](https://img.shields.io/badge/Apple%20Silicon-only-lightgrey)
+![Swift 5.9+](https://img.shields.io/badge/Swift-5.9%2B-F05138?logo=swift&logoColor=white)
+[![Install with npx](https://img.shields.io/badge/install-npx-CB3837?logo=npm)](#npx로-설치)
+[![Unofficial: not affiliated with Anthropic](https://img.shields.io/badge/unofficial-not%20affiliated%20with%20Anthropic-orange)](#중요-안내)
+
 claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보여주는 작은 macOS 메뉴 막대 앱입니다.
 
 - **메뉴 막대:** 남은 양에 맞는 Clawd 게이지 아이콘과 남은 세션 비율(예: `73%`)
