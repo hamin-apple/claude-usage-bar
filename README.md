@@ -36,8 +36,20 @@ npx github:hamin-apple/claude-usage-bar
 ```
 
 This needs Node.js (for `npx`) plus the requirements above. It fetches this repository, builds the app from source on your Mac, quits a running copy, installs it to `/Applications/ClaudeUsageBar.app`, and opens it.
-Nothing is published to the npm registry, and no prebuilt binary is downloaded. Run the same command again to update.
+Nothing is published to the npm registry, and no prebuilt binary is downloaded.
 Add `--no-open` to install without starting the app.
+
+### Update
+
+Run the same command again:
+
+```bash
+npx github:hamin-apple/claude-usage-bar
+```
+
+npx checks GitHub for the latest commit on `main` each time, so a cached older copy is not reused. The running app is quit, replaced in place, and reopened.
+Because the path stays `/Applications/ClaudeUsageBar.app`, Launch at Login keeps working, and the keychain "Always Allow" choice is kept (the token is read through `/usr/bin/security`, not by the app).
+To install a specific version, add a commit or branch after `#`, e.g. `npx github:hamin-apple/claude-usage-bar#6cdb035`.
 
 ## Build and run
 
