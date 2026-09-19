@@ -1,0 +1,24 @@
+{
+  "name": "claude-usage-bar",
+  "version": "0.1.0",
+  "description": "macOS menu bar app showing remaining claude.ai session and weekly limits. Builds from source and installs to /Applications.",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hamin-apple/claude-usage-bar.git"
+  },
+  "bin": {
+    "claude-usage-bar": "Scripts/npx-install.sh"
+  },
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "files": [
+    "Package.swift",
+    "Sources/",
+    "Resources/",
+    "Scripts/",
+    "LICENSE",
+    "NOTICE.md"
+  ]
+}
