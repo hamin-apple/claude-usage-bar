@@ -6,6 +6,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 permissions:
@@ -28,6 +29,14 @@ jobs:
 
       - name: Build (Swift 5 language mode)
         run: swift build
+
+      - name: Versions match (Info.plist, package.json, tag)
+        run: |
+          plist=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+          pkg=$(node -p 'require("./package.json").version')
+          echo "Info.plist=$plist package.json=$pkg ref=$GITHUB_REF"
+          test "$plist" = "$pkg"
+          case "$GITHUB_REF" in refs/tags/v*) test "${GITHUB_REF#refs/tags/v}" = "$plist" ;; esac
 
       - name: Reject unknown or malformed launch arguments
         run: |

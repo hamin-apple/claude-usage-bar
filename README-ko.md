@@ -87,7 +87,7 @@ npx github:hamin-apple/claude-usage-bar
 
 npx는 실행할 때마다 GitHub에서 `main`의 최신 커밋을 확인하므로, 캐시된 옛 버전을 다시 쓰지 않습니다. 실행 중인 앱을 종료하고 같은 자리에 교체한 뒤 다시 실행합니다.
 경로가 `/Applications/ClaudeUsageBar.app`으로 그대로라서 Launch at Login은 계속 동작하고, 키체인의 "Always Allow" 선택도 유지됩니다(토큰은 앱이 아니라 `/usr/bin/security`로 읽습니다).
-특정 버전을 설치하려면 `#` 뒤에 커밋이나 브랜치를 붙이세요. 예: `npx github:hamin-apple/claude-usage-bar#6cdb035`
+특정 버전을 설치하려면 `#` 뒤에 릴리스 태그([Releases](https://github.com/hamin-apple/claude-usage-bar/releases) 참고), 커밋, 브랜치를 붙이세요. 예: `npx github:hamin-apple/claude-usage-bar#v0.2.0`
 
 ### 제거
 

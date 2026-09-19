@@ -87,7 +87,7 @@ npx github:hamin-apple/claude-usage-bar
 
 npx checks GitHub for the latest commit on `main` each time, so a cached older copy is not reused. The running app is quit, replaced in place, and reopened.
 Because the path stays `/Applications/ClaudeUsageBar.app`, Launch at Login keeps working, and the keychain "Always Allow" choice is kept (the token is read through `/usr/bin/security`, not by the app).
-To install a specific version, add a commit or branch after `#`, e.g. `npx github:hamin-apple/claude-usage-bar#6cdb035`.
+To install a specific version, add a release tag (see [Releases](https://github.com/hamin-apple/claude-usage-bar/releases)), commit, or branch after `#`, e.g. `npx github:hamin-apple/claude-usage-bar#v0.2.0`.
 
 ### Uninstall
 
