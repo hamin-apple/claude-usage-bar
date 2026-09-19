@@ -20,6 +20,22 @@ Read these before using the app.
   If you are not comfortable with that, do not use this app.
 - **Token handling.** The token is read right before each request, kept only in memory, never written to logs or files, and never refreshed by the app. The relevant code is short: `Credentials.swift` and `UsageAPI.swift`.
 
+## Privacy
+
+The app asks you for nothing: no account, no sign-in screen, no name, email, or payment details. It has no analytics or telemetry.
+
+| What | Where it comes from | Where it goes |
+|---|---|---|
+| OAuth access token | Claude Code's keychain item (`Claude Code-credentials`), or `~/.claude/.credentials.json` | Only `https://api.anthropic.com/api/oauth/usage`, in the `Authorization` header. Kept in memory only |
+| Plan (`subscriptionType`, e.g. `pro`) | The same keychain entry | Shown as the badge; never sent anywhere |
+| Claude Code version | Running `claude --version` | Sent as `User-Agent: claude-code/<version>` (see Important notices) |
+| Usage percentages and reset times | The API response | Shown in the menu bar and panel; kept in memory only |
+
+- That endpoint is the only network destination in the code. `--api-url` for testing accepts loopback addresses only, so the token cannot be sent to another host.
+- Nothing is written to disk: no settings, caches, logs, or cookies (the HTTP session is ephemeral). The only file output is the icon PNGs from `--render-icons`. Launch at Login is recorded by macOS itself, not by the app.
+- The token and request headers are never printed. `--check-token` prints only metadata (state, source, plan, time left, token length).
+- As with any request, Anthropic's server sees your IP address and account through the token, the same as when you use Claude Code.
+
 ## Requirements
 
 - Apple Silicon Mac, macOS 13 or later
