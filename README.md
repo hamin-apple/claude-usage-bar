@@ -29,6 +29,16 @@ Read these before using the app.
   The app has no login of its own. It borrows the OAuth token that Claude Code stores in the macOS keychain (`Claude Code-credentials`),
   and falls back to `~/.claude/.credentials.json` if the keychain read fails.
 
+## Install with npx
+
+```bash
+npx github:hamin-apple/claude-usage-bar
+```
+
+This needs Node.js (for `npx`) plus the requirements above. It fetches this repository, builds the app from source on your Mac, quits a running copy, installs it to `/Applications/ClaudeUsageBar.app`, and opens it.
+Nothing is published to the npm registry, and no prebuilt binary is downloaded. Run the same command again to update.
+Add `--no-open` to install without starting the app.
+
 ## Build and run
 
 ```bash
@@ -129,7 +139,9 @@ Sources/ClaudeUsageBar/
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
-Scripts/bundle.sh
+Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
+Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
+package.json            npx metadata only (private, not published to npm)
 ```
 
 ## License

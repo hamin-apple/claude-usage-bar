@@ -15,6 +15,7 @@ swift build                                        # debug build, checks the cod
 .build/debug/ClaudeUsageBar --check-token          # token state only, never prints the token
 .build/debug/ClaudeUsageBar --render-icons /tmp/i  # PNGs of every icon + sheet.png, to eyeball SVG rendering
 ./Scripts/bundle.sh                                # release build -> build/ClaudeUsageBar.app (ad-hoc signed)
+npx --yes . --no-open                              # test the npx installer locally (builds, installs to /Applications, quits the running app)
 ```
 
 Reinstall after a change (same path, so the Launch at Login item keeps working):
@@ -34,6 +35,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Token reading, expiry check, plan (`subscriptionType`) | `Sources/ClaudeUsageBar/Credentials.swift` |
 | Icon step selection, SVG loading, `--render-icons` | `Sources/ClaudeUsageBar/IconProvider.swift` |
 | Menu bar icons (SVG, used as-is) | `Resources/icons/` |
+| `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
 
 ## Hard constraints (do not break)
@@ -84,5 +86,5 @@ Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recove
 
 - Code is MIT (`LICENSE`). The artwork (`Resources/icons/*.svg`, `AppIcon.icns`, `app-icon.svg`) is excluded and not licensed; see `NOTICE.md`.
 - The endpoint is unofficial and using a subscription OAuth token outside Claude Code may violate Anthropic's terms (see the notices in `README.md`). Do not present this as sanctioned, and do not add features that collect, store, or forward tokens.
-- The repo is private. Before making it public: settle the terms and artwork questions, and publish from a **fresh repository** (old commit SHAs from before a history rewrite may still be fetchable on the current one).
+- The repo is public. Users install with `npx github:hamin-apple/claude-usage-bar`, which builds from source (no prebuilt binary, so no notarization or quarantine issues). `package.json` is `"private": true` on purpose: do not publish to the npm registry without revisiting the terms and artwork notices. Keep `files` in `package.json` in sync if new build inputs are added outside `Sources/`, `Resources/`, `Scripts/`.
 - Git history was already rewritten once to use the GitHub noreply address; do not rewrite it again. Commit with the noreply address.
