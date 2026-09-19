@@ -1,6 +1,6 @@
 {
   "name": "claude-usage-bar",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "macOS menu bar app showing remaining claude.ai session and weekly limits. Builds from source and installs to /Applications.",
   "license": "MIT",
   "private": true,

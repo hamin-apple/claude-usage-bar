@@ -76,6 +76,12 @@ Observed once, cause not confirmed: after a burst of accidental real-mode launch
 
 Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recovery, Swift versions below 5.9, Intel Macs, keychain item names when `CLAUDE_CONFIG_DIR` is customized.
 
+## Releases
+
+- The version lives in two places that must match: `CFBundleShortVersionString` in `Resources/Info.plist` and `version` in `package.json` (CI checks this, and on a `v*` tag also checks the tag). Bump `CFBundleVersion` by one each release.
+- To release: bump both in a PR, merge, then tag the merge commit `vX.Y.Z` on `main` and create a GitHub Release with notes (`gh release create vX.Y.Z --notes-file ...`).
+- Do not attach a built `.app` to a release. It is ad-hoc signed, so a downloaded copy is quarantined by Gatekeeper; users build from source with `npx github:hamin-apple/claude-usage-bar#vX.Y.Z`.
+
 ## Troubleshooting
 
 - Panel shows `Can't connect (HTTP 200)`: the response had no readable limits, so the format probably changed. Fix `UsageAPI.parse` and refresh the fixture (strip amounts and any identifying data).
