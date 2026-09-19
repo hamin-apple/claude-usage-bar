@@ -51,6 +51,19 @@ npx checks GitHub for the latest commit on `main` each time, so a cached older c
 Because the path stays `/Applications/ClaudeUsageBar.app`, Launch at Login keeps working, and the keychain "Always Allow" choice is kept (the token is read through `/usr/bin/security`, not by the app).
 To install a specific version, add a commit or branch after `#`, e.g. `npx github:hamin-apple/claude-usage-bar#6cdb035`.
 
+### Uninstall
+
+1. If **Launch at Login** is on, turn it off in the panel first, so no stale entry is left in System Settings > General > Login Items.
+2. Quit the app (**Quit** in the panel), then delete it:
+
+```bash
+rm -rf /Applications/ClaudeUsageBar.app
+```
+
+The app stores no settings, caches, or files of its own, so nothing else is left in `~/Library`.
+Do not delete the `Claude Code-credentials` keychain item: it belongs to Claude Code, and the app never created one.
+npx keeps a build copy under `~/.npm/_npx/`. It is only a cache and can be left alone or removed with the rest of the npx cache.
+
 ## Build and run
 
 ```bash
