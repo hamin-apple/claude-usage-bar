@@ -61,6 +61,10 @@ The app asks you for nothing: no account, no sign-in screen, no name, email, or 
 npx github:hamin-apple/claude-usage-bar
 ```
 
+<img src="docs/screenshots/install.gif" alt="Terminal running npx github:hamin-apple/claude-usage-bar: confirm the package, build, install to /Applications, start" width="768">
+
+<sub>Recorded from a real first install. The 26-second build is sped up, and the npx cache path is shortened to `~/.npm/_npx/`.</sub>
+
 This needs Node.js (for `npx`) plus the requirements above. It fetches this repository, builds the app from source on your Mac, quits a running copy, installs it to `/Applications/ClaudeUsageBar.app`, and opens it.
 Nothing is published to the npm registry, and no prebuilt binary is downloaded.
 Add `--no-open` to install without starting the app.
@@ -190,7 +194,7 @@ Sources/ClaudeUsageBar/
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
-docs/screenshots/        README screenshots (mock mode)
+docs/screenshots/        README screenshots (mock mode) and install.gif
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
