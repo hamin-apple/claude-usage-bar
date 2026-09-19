@@ -7,6 +7,14 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
 - **메뉴 막대:** 남은 양에 맞는 Clawd 게이지 아이콘과 남은 세션 비율(예: `73%`)
 - **클릭:** 세션, 주간, 모델별 주간 한도의 남은 양 막대, 각 한도가 초기화되기까지 남은 시간, 요금제 배지(예: `Pro`), Refresh Now, Launch at Login, Quit
 
+<p>
+  <img src="docs/screenshots/menu-bar.png" alt="Clawd 게이지 아이콘과 73%가 보이는 메뉴 막대 항목" width="68">
+  <br>
+  <img src="docs/screenshots/panel.png" alt="세션, 주간, Sonnet 주간 한도의 남은 양과 초기화 시간, Pro 배지가 보이는 패널" width="301">
+</p>
+
+<sub>mock 모드(`--mock 27`)에서 찍은 화면이며 실제 계정 데이터가 아닙니다.</sub>
+
 앱에 나오는 비율은 모두 사용한 양이 아니라 **남은** 양입니다. claude.ai의 사용량 페이지는 사용한 쪽을 보여주므로, 거기서 `31% used`는 여기서 `69%`로 나옵니다.
 
 ## 중요 안내
@@ -182,6 +190,7 @@ Sources/ClaudeUsageBar/
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
+docs/screenshots/        README screenshots (mock mode)
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
