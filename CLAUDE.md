@@ -36,7 +36,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Icon step selection, SVG loading, `--render-icons` | `Sources/ClaudeUsageBar/IconProvider.swift` |
 | Menu bar icons (SVG, used as-is) | `Resources/icons/` |
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
-| README screenshots | `docs/screenshots/` (retake in `--mock 27` so no real account data appears; crop to the app's own item and panel only) |
+| README screenshots | `docs/screenshots/` (retake in `--mock 27` so no real account data appears; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
 
 ## Hard constraints (do not break)
@@ -85,7 +85,7 @@ Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recove
 
 ## Repo and legal notes
 
-- Code is MIT (`LICENSE`). The artwork (`Resources/icons/*.svg`, `AppIcon.icns`, `app-icon.svg`, and `docs/screenshots/*.png`, which show the icon) is excluded and not licensed; see `NOTICE.md`.
+- Code is MIT (`LICENSE`). The artwork (`Resources/icons/*.svg`, `AppIcon.icns`, `app-icon.svg`, and `docs/screenshots/menu-bar.png`/`panel.png`, which show the icon) is excluded and not licensed; see `NOTICE.md`.
 - The endpoint is unofficial and using a subscription OAuth token outside Claude Code may violate Anthropic's terms (see the notices in `README.md`). Do not present this as sanctioned, and do not add features that collect, store, or forward tokens.
 - The repo is public. Users install with `npx github:hamin-apple/claude-usage-bar`, which builds from source (no prebuilt binary, so no notarization or quarantine issues). `package.json` is `"private": true` on purpose: do not publish to the npm registry without revisiting the terms and artwork notices. Keep `files` in `package.json` in sync if new build inputs are added outside `Sources/`, `Resources/`, `Scripts/`.
 - Git history was already rewritten once to use the GitHub noreply address; do not rewrite it again. Commit with the noreply address.

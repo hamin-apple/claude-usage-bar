@@ -61,6 +61,10 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
 npx github:hamin-apple/claude-usage-bar
 ```
 
+<img src="docs/screenshots/install.gif" alt="npx github:hamin-apple/claude-usage-bar를 실행해 패키지 확인, 빌드, /Applications 설치, 실행까지 진행되는 터미널" width="768">
+
+<sub>실제 첫 설치를 녹화한 화면입니다. 26초 걸리는 빌드는 빠르게 넘기고, npx 캐시 경로는 `~/.npm/_npx/`로 줄였습니다.</sub>
+
 Node.js(`npx`용)와 위의 요구 사항이 필요합니다. 이 저장소를 받아 Mac에서 소스로 빌드하고, 실행 중인 앱을 종료한 뒤 `/Applications/ClaudeUsageBar.app`에 설치하고 실행합니다.
 npm 레지스트리에 올린 패키지가 아니며, 미리 빌드된 바이너리를 내려받지도 않습니다.
 설치만 하고 실행하지 않으려면 `--no-open`을 붙이세요.
@@ -190,7 +194,7 @@ Sources/ClaudeUsageBar/
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
 Fixtures/usage_sample.json
-docs/screenshots/        README screenshots (mock mode)
+docs/screenshots/        README screenshots (mock mode) and install.gif
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
