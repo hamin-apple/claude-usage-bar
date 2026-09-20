@@ -195,13 +195,15 @@ Finder와 로그인 항목에 보이는 앱 아이콘은 `Resources/AppIcon.icns
 ```
 Package.swift
 Sources/ClaudeUsageBar/
-  App.swift            @main, MenuBarExtra, launch arguments, menu bar label
+  App.swift            @main, MenuBarExtra, menu bar label
+  LaunchOptions.swift  launch argument parsing
   UsageStore.swift     state, polling loop, backoff handling
   UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
   Credentials.swift    token reading, expiry check
   IconProvider.swift   picks/loads/caches the SVG for the remaining amount, --render-icons
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
+Sources/ClaudeUsageBarChecks/main.swift   logic checks (swift run ClaudeUsageBarChecks)
 Fixtures/usage_sample.json
 docs/screenshots/        README screenshots (mock mode) and install.gif
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
