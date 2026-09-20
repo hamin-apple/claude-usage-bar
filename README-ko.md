@@ -129,7 +129,7 @@ Dock 아이콘은 나타나지 않습니다(`LSUIElement`).
   <img src="docs/architecture-ko.png" alt="구조 다이어그램: npx 설치 스크립트가 앱을 빌드해 설치하고, IconProvider와 UsageStore가 MenuBarExtra 라벨에 값을 전달하며, UsageStore가 180초마다 UsageAPI를 호출하고, UsageAPI는 Credentials가 로그인 키체인에서 읽은 Bearer 토큰으로 api.anthropic.com을 호출하며, PopoverView가 한도 행을 보여 줍니다" width="900">
 </p>
 
-<sub>같은 다이어그램을 확대, 검색, 가이드 뷰, 내보내기까지 되는 페이지로 보려면 **[hamin-apple.github.io/claude-usage-bar/architecture-ko.html](https://hamin-apple.github.io/claude-usage-bar/architecture-ko.html)** 를 열어 주세요(영어판은 [architecture.html](https://hamin-apple.github.io/claude-usage-bar/architecture.html)). 페이지와 위 이미지는 `docs/architecture-ko.json`에서 생성하며, 페이지의 버튼 같은 뷰어 자체 UI는 영어로 표시됩니다.</sub>
+<sub>확대, 검색, 가이드 뷰, 내보내기까지 되는 페이지는 **[hamin-apple.github.io/claude-usage-bar/architecture.html](https://hamin-apple.github.io/claude-usage-bar/architecture.html)** 에 있습니다(페이지는 영어판입니다). 위 한국어 이미지는 `docs/architecture-ko.json`에서 생성합니다.</sub>
 
 ## 동작
 
@@ -215,7 +215,8 @@ Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resou
 Sources/ClaudeUsageBarChecks/Checks.swift  logic checks (swift run ClaudeUsageBarChecks)
 Fixtures/usage_sample.json
 docs/screenshots/        README screenshots (mock mode) and install.gif
-docs/architecture.json, docs/architecture-ko.json  architecture diagram sources, English and Korean (the .html page and .png image next to each are generated from it)
+docs/architecture.json    architecture diagram source (architecture.html, architecture.png are generated from it)
+docs/architecture-ko.json Korean text of the same diagram (architecture-ko.png for README-ko.md)
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)

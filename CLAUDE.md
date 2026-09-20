@@ -41,7 +41,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
 | README screenshots | `docs/screenshots/` (retake with `--mock 27 -AppleLanguages "(en)"` so no real account data appears and the panel reads in English; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
-| Architecture diagram | Two language variants: `docs/architecture.json` (English, used by `README.md`) and `docs/architecture-ko.json` (Korean, used by `README-ko.md`). The `.html` page and `.png` image beside each are generated from it with the `archify` skill: `deliver architecture`, then `visual-check`, then crop the diagram panel out of the 2048x1320 light screenshot. Keep both variants in step, positions included; the Korean one is the English one with the text translated (the viewer's own UI stays English) |
+| Architecture diagram | `docs/architecture.json` (English) produces `docs/architecture.html` (the published page) and `docs/architecture.png` (image in `README.md`). `docs/architecture-ko.json` is the same diagram with the text translated and identical positions, and produces only `docs/architecture-ko.png` for `README-ko.md`; both READMEs link to the one English page. Generate with the `archify` skill: `deliver architecture`, then `visual-check`, then crop the diagram panel out of the 2048x1320 light screenshot. Keep the two sources in step |
 
 ## Hard constraints (do not break)
 
@@ -84,7 +84,7 @@ Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recove
 
 ## Repo housekeeping
 
-- GitHub Pages serves `docs/` from `main`, so the diagram pages are at <https://hamin-apple.github.io/claude-usage-bar/architecture.html> and `.../architecture-ko.html`. Both READMEs link there, so renaming or removing those files breaks the links. There is no `docs/index.html`, so the site root is a 404.
+- GitHub Pages serves `docs/` from `main`, so the diagram page is at <https://hamin-apple.github.io/claude-usage-bar/architecture.html>. Both READMEs link there, so renaming or removing that file breaks the links, and a change only shows up once it is on `main`. There is no `docs/index.html`, so the site root is a 404.
 - `.github/dependabot.yml` opens monthly PRs for GitHub Actions versions only. There are no package dependencies to update.
 - `SECURITY.md` points reporters at GitHub private vulnerability reporting (enabled on the repo) and tells them never to include a token. Keep the "not a vulnerability" list in sync with the README's Important notices.
 
