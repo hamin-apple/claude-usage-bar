@@ -203,7 +203,7 @@ Sources/ClaudeUsageBar/
   IconProvider.swift   picks/loads/caches the SVG for the remaining amount, --render-icons
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)
-Sources/ClaudeUsageBarChecks/main.swift   logic checks (swift run ClaudeUsageBarChecks)
+Sources/ClaudeUsageBarChecks/Checks.swift  logic checks (swift run ClaudeUsageBarChecks)
 Fixtures/usage_sample.json
 docs/screenshots/        README screenshots (mock mode) and install.gif
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app

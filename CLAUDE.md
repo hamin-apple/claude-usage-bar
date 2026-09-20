@@ -32,7 +32,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Panel text, layout, Launch at Login toggle | `Sources/ClaudeUsageBar/PopoverView.swift` |
 | Menu bar label (`73%`, `73%!`, `?`, `…`) | `Sources/ClaudeUsageBar/App.swift` |
 | Launch arguments (`LaunchOptions.parse`) | `Sources/ClaudeUsageBar/LaunchOptions.swift` |
-| Logic checks | `Sources/ClaudeUsageBarChecks/main.swift` |
+| Logic checks | `Sources/ClaudeUsageBarChecks/Checks.swift` |
 | Polling loop, backoff application, status notices, wake handling | `Sources/ClaudeUsageBar/UsageStore.swift` |
 | Endpoint call, response parsing, row titles, `BackoffPolicy`, User-Agent | `Sources/ClaudeUsageBar/UsageAPI.swift` |
 | Token reading, expiry check, plan (`subscriptionType`) | `Sources/ClaudeUsageBar/Credentials.swift` |
