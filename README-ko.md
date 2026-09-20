@@ -123,6 +123,14 @@ Dock 아이콘은 나타나지 않습니다(`LSUIElement`).
 
 패널의 "Launch at Login" 스위치는 `SMAppService`를 씁니다. 켜기 전에 앱을 `/Applications`에 복사하세요.
 
+## 구조
+
+<p>
+  <img src="docs/architecture.png" alt="구조 다이어그램: npx 설치 스크립트가 앱을 빌드해 설치하고, IconProvider와 UsageStore가 MenuBarExtra 라벨에 값을 전달하며, UsageStore가 180초마다 UsageAPI를 호출하고, UsageAPI는 Credentials가 로그인 키체인에서 읽은 Bearer 토큰으로 api.anthropic.com을 호출하며, PopoverView가 한도 행을 보여 줍니다" width="900">
+</p>
+
+<sub>`docs/architecture.html`은 같은 다이어그램을 담은 단독 페이지입니다(확대, 검색, 가이드 뷰, 내보내기). GitHub에서는 소스로 보이니 내려받아 브라우저에서 열어 주세요. 두 파일 모두 `docs/architecture.json`에서 생성합니다. 다이어그램 글자는 스크린샷과 같이 영어입니다.</sub>
+
 ## 동작
 
 | 항목 | 값 |
@@ -207,6 +215,7 @@ Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resou
 Sources/ClaudeUsageBarChecks/Checks.swift  logic checks (swift run ClaudeUsageBarChecks)
 Fixtures/usage_sample.json
 docs/screenshots/        README screenshots (mock mode) and install.gif
+docs/architecture.json   architecture diagram source (architecture.html, architecture.png are generated from it)
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
