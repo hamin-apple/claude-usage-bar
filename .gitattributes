@@ -1,2 +1,3 @@
-# Generated from docs/architecture.json; keep it out of diffs and language stats.
+# Generated from the docs/architecture*.json sources; keep them out of diffs and language stats.
 docs/architecture.html linguist-generated=true -diff
+docs/architecture-ko.html linguist-generated=true -diff
