@@ -19,7 +19,7 @@ A small native macOS menu bar app that shows how much of your claude.ai subscrip
 <p>
   <img src="docs/screenshots/menu-bar.png" alt="Menu bar item showing the Clawd gauge icon and 73%" width="68">
   <br>
-  <img src="docs/screenshots/panel.png" alt="Panel with remaining session, weekly, and Sonnet weekly limits, reset times, and a Pro badge" width="301">
+  <img src="docs/screenshots/panel.png" alt="Panel with remaining session, weekly, and Sonnet weekly limits, reset times, and a Pro badge" width="302">
 </p>
 
 <sub>Screenshots taken in mock mode (`--mock 27`), not real account data.</sub>
@@ -197,6 +197,7 @@ Package.swift
 Sources/ClaudeUsageBar/
   App.swift            @main, MenuBarExtra, menu bar label
   LaunchOptions.swift  launch argument parsing
+  TimeFormat.swift     the panel's clock text
   UsageStore.swift     state, polling loop, backoff handling
   UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
   Credentials.swift    token reading, expiry check

@@ -29,7 +29,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 
 | Change | File |
 |---|---|
-| Panel text, layout, Launch at Login toggle | `Sources/ClaudeUsageBar/PopoverView.swift` |
+| Panel text, layout, Launch at Login toggle | `Sources/ClaudeUsageBar/PopoverView.swift`, clock text in `TimeFormat.swift` |
 | Menu bar label (`73%`, `73%!`, `?`, `…`) | `Sources/ClaudeUsageBar/App.swift` |
 | Launch arguments (`LaunchOptions.parse`) | `Sources/ClaudeUsageBar/LaunchOptions.swift` |
 | Logic checks | `Sources/ClaudeUsageBarChecks/Checks.swift` |
@@ -39,7 +39,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Icon step selection, SVG loading, `--render-icons` | `Sources/ClaudeUsageBar/IconProvider.swift` |
 | Menu bar icons (SVG, used as-is) | `Resources/icons/` |
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
-| README screenshots | `docs/screenshots/` (retake in `--mock 27` so no real account data appears; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
+| README screenshots | `docs/screenshots/` (retake with `--mock 27 -AppleLanguages "(en)"` so no real account data appears and the panel reads in English; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
 
 ## Hard constraints (do not break)
@@ -65,6 +65,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 - **`Task.sleep` does not advance while the Mac sleeps**, so on wake the loop is rebuilt from an absolute `nextPollAt`.
 - **Login toggle** follows the result of `register()`/`unregister()` and re-reads real status when the panel opens, because status read right after `register()` can lag.
 - Icon step: nearest number to the remaining percent; ties go to the lower step.
+- **Panel clock text is English** (`TimeFormat.clock`), because every other string in the panel is. The 12- or 24-hour choice still follows the Mac's setting. `Text(date, style: .time)` was used before and rendered as `오후 3:09` on a Korean Mac.
 
 ## Testing
 
