@@ -14,6 +14,7 @@ swift build                                        # debug build, checks the cod
 .build/debug/ClaudeUsageBar --mock-error expired   # also: login | ratelimit | offline (combine with --mock)
 .build/debug/ClaudeUsageBar --check-token          # token state only, never prints the token
 .build/debug/ClaudeUsageBar --render-icons /tmp/i  # PNGs of every icon + sheet.png, to eyeball SVG rendering
+swift run ClaudeUsageBarChecks                     # logic checks: parsing, remaining rule, backoff, launch arguments
 ./Scripts/bundle.sh                                # release build -> build/ClaudeUsageBar.app (ad-hoc signed)
 npx --yes . --no-open                              # test the npx installer locally (builds, installs to /Applications, quits the running app)
 ```
@@ -29,7 +30,9 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Change | File |
 |---|---|
 | Panel text, layout, Launch at Login toggle | `Sources/ClaudeUsageBar/PopoverView.swift` |
-| Menu bar label (`73%`, `73%!`, `?`, `…`), launch arguments | `Sources/ClaudeUsageBar/App.swift` |
+| Menu bar label (`73%`, `73%!`, `?`, `…`) | `Sources/ClaudeUsageBar/App.swift` |
+| Launch arguments (`LaunchOptions.parse`) | `Sources/ClaudeUsageBar/LaunchOptions.swift` |
+| Logic checks | `Sources/ClaudeUsageBarChecks/main.swift` |
 | Polling loop, backoff application, status notices, wake handling | `Sources/ClaudeUsageBar/UsageStore.swift` |
 | Endpoint call, response parsing, row titles, `BackoffPolicy`, User-Agent | `Sources/ClaudeUsageBar/UsageAPI.swift` |
 | Token reading, expiry check, plan (`subscriptionType`) | `Sources/ClaudeUsageBar/Credentials.swift` |
@@ -65,11 +68,12 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 
 ## Testing
 
-There is no test target. `.github/workflows/ci.yml` runs on every PR and push to `main` (macOS runner): Swift 5 and Swift 6 mode builds, launch-argument rejection (exit 2), `--render-icons` for every SVG, the npx installer's argument check and `npm pack` contents, and a full `npx --yes . --no-open` install. CI must never start the app in real mode or read a token. Manual verification used:
+There is no XCTest target: Command Line Tools ship no XCTest, and the repo must stay checkable without Xcode. Instead `Sources/ClaudeUsageBarChecks` is a second executable that asserts and exits 1 on failure (`swift run ClaudeUsageBarChecks`). It compiles `UsageAPI.swift` and `LaunchOptions.swift` through symlinks, so it checks the same source the app uses; add a symlink when a check needs another file, and keep the checks free of network, keychain, and AppKit.
+
+`Package.swift` declares that target **only when `Sources/ClaudeUsageBarChecks/UsageAPI.swift` exists**, and `package.json` ships `Sources/ClaudeUsageBar/` rather than `Sources/`. npm does not pack symlinks, so an npm-installed copy that carried the checks target would fail to build, which would break `npx` installs. If you add sources to the checks target, keep both of those in step, and verify with `npm pack` + `swift build` on the extracted tarball. `.github/workflows/ci.yml` runs on every PR and push to `main` (macOS runner): the logic checks, Swift 5 and Swift 6 mode builds, launch-argument rejection (exit 2), `--render-icons` for every SVG, the npx installer's argument check and `npm pack` contents, and a full `npx --yes . --no-open` install. CI must never start the app in real mode or read a token. Manual verification used:
 
 - `--mock` / `--mock-error` and `--render-icons` for UI and icons.
 - A local fake HTTP server plus `--api-url http://127.0.0.1:<port>/` to exercise the real polling loop: 200 cadence (>= 180 s), 429 (single request, no retry during backoff), 503, garbage body, refused connection.
-- Compiling `UsageAPI.swift` with a small `main.swift` to check parsing against `Fixtures/usage_sample.json` and `BackoffPolicy` sequences.
 - Building in both language modes. To check Swift 6: copy the repo somewhere temporary, set `swift-tools-version:6.0`, delete the `swiftLanguageVersions` line, run `swift build`.
 
 Observed once, cause not confirmed: after a burst of accidental real-mode launches (see the launch-arguments constraint above) the menu bar showed the error icon with `?` and recovered on its own within minutes without a restart. That is consistent with a 429 followed by the backoff retry, but the panel notice was not captured, so the 429 path is not proven end to end.

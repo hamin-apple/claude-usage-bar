@@ -38,6 +38,9 @@ jobs:
           test "$plist" = "$pkg"
           case "$GITHUB_REF" in refs/tags/v*) test "${GITHUB_REF#refs/tags/v}" = "$plist" ;; esac
 
+      - name: Logic checks (parsing, backoff, launch arguments)
+        run: swift run ClaudeUsageBarChecks
+
       - name: Reject unknown or malformed launch arguments
         run: |
           set -u
@@ -75,7 +78,7 @@ jobs:
             const files = require(process.argv[1])[0].files.map(f => f.path);
             const need = ["Package.swift", "Scripts/bundle.sh", "Scripts/npx-install.sh", "Resources/Info.plist", "Resources/AppIcon.icns"];
             const missing = need.filter(f => !files.includes(f));
-            const stray = files.filter(f => /^(\.build|build|Fixtures|docs)\//.test(f));
+            const stray = files.filter(f => /^(\.build|build|Fixtures|docs|Sources\/ClaudeUsageBarChecks)\//.test(f));
             if (missing.length || stray.length) { console.error({ missing, stray }); process.exit(1); }
             console.log(files.length + " files ok");
           ' "$RUNNER_TEMP/pack.json"
