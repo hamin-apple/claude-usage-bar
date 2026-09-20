@@ -180,6 +180,29 @@ enum Checks {
     equal("-AppleLanguages pair does not disturb --mock",
           parsed(["--mock", "27", "-AppleLanguages", "(en)"])?.mockUtilization ?? -1, 27)
 
+    // MARK: - Clock text (English words, the Mac's 12/24-hour choice)
+
+    let noon = Date(timeIntervalSince1970: 1_700_000_000)
+
+    func clock(_ identifier: String) -> String {
+        TimeFormat.clock(noon, locale: Locale(identifier: identifier))
+    }
+
+    check("clock: Korean locale still reads in English", !clock("ko_KR").contains("오"),
+          "got \(clock("ko_KR"))")
+    check("clock: 12-hour locale uses AM/PM", clock("en_US").hasSuffix("AM") || clock("en_US").hasSuffix("PM"),
+          "got \(clock("en_US"))")
+    check("clock: 24-hour locale has no AM/PM", !clock("en_GB").contains("M"), "got \(clock("en_GB"))")
+    check("clock: 24-hour locale detected", TimeFormat.uses24HourClock(Locale(identifier: "en_GB")))
+    check("clock: 12-hour locale detected", !TimeFormat.uses24HourClock(Locale(identifier: "en_US")))
+    check("clock: hour and minute shown", clock("en_US").contains(":"), "got \(clock("en_US"))")
+    check("clock: a minute later reads differently",
+          TimeFormat.clock(noon, locale: Locale(identifier: "en_US"))
+              != TimeFormat.clock(noon.addingTimeInterval(60), locale: Locale(identifier: "en_US")))
+    check("clock: same instant reads the same",
+          TimeFormat.clock(noon, locale: Locale(identifier: "en_US"))
+              == TimeFormat.clock(noon, locale: Locale(identifier: "en_US")))
+
     // MARK: - Result
 
     if failures > 0 {

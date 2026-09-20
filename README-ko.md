@@ -19,7 +19,7 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
 <p>
   <img src="docs/screenshots/menu-bar.png" alt="Clawd 게이지 아이콘과 73%가 보이는 메뉴 막대 항목" width="68">
   <br>
-  <img src="docs/screenshots/panel.png" alt="세션, 주간, Sonnet 주간 한도의 남은 양과 초기화 시간, Pro 배지가 보이는 패널" width="301">
+  <img src="docs/screenshots/panel.png" alt="세션, 주간, Sonnet 주간 한도의 남은 양과 초기화 시간, Pro 배지가 보이는 패널" width="302">
 </p>
 
 <sub>mock 모드(`--mock 27`)에서 찍은 화면이며 실제 계정 데이터가 아닙니다.</sub>
@@ -197,6 +197,7 @@ Package.swift
 Sources/ClaudeUsageBar/
   App.swift            @main, MenuBarExtra, menu bar label
   LaunchOptions.swift  launch argument parsing
+  TimeFormat.swift     the panel's clock text
   UsageStore.swift     state, polling loop, backoff handling
   UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
   Credentials.swift    token reading, expiry check

@@ -41,7 +41,7 @@ struct PopoverView: View {
 
             HStack {
                 if let updated = store.lastUpdated {
-                    Text("Last updated \(updated, style: .time)")
+                    Text("Last updated \(TimeFormat.clock(updated))")
                 } else {
                     Text("Not updated yet")
                 }
