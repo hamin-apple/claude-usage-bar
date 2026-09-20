@@ -41,6 +41,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
 | README screenshots | `docs/screenshots/` (retake with `--mock 27 -AppleLanguages "(en)"` so no real account data appears and the panel reads in English; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
+| Architecture diagram | `docs/architecture.json` is the source; `docs/architecture.html` (standalone page) and `docs/architecture.png` (README image) are generated from it with the `archify` skill: `deliver architecture`, then `visual-check`, then crop the diagram panel out of the 2048x1320 light screenshot. Text is English, like the screenshots |
 
 ## Hard constraints (do not break)
 

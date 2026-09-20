@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Claude Usage Bar — system architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "poll-path", "label": "Polling path", "focus": ["store", "api", "endpoint", "creds", "keychain"], "note": "Read the token, then call the unofficial endpoint every 180 seconds." },
+      { "id": "menu-bar-ui", "label": "Menu bar UI", "focus": ["icons", "menubar", "panel", "store"], "note": "How the remaining amount reaches the menu bar label and the panel." },
+      { "id": "install", "label": "Install path", "focus": ["installer", "menubar", "launch"], "note": "npx builds from source, installs to /Applications, and launch arguments are checked." }
+    ]
+  },
+  "components": [
+    { "id": "installer", "type": "cloud", "label": "npx installer", "sublabel": "Scripts/npx-install.sh", "tag": "builds from source", "pos": [60, 120], "size": [240, 70] },
+    { "id": "icons", "type": "frontend", "label": "IconProvider", "sublabel": "Resources/icons/*.svg", "pos": [360, 120], "size": [220, 66] },
+    { "id": "launch", "type": "security", "label": "LaunchOptions", "sublabel": "strict arguments · exit 2", "pos": [660, 120], "size": [220, 66] },
+    { "id": "endpoint", "type": "external", "label": "api.anthropic.com", "sublabel": "/api/oauth/usage · unofficial", "pos": [960, 120], "size": [240, 76] },
+    { "id": "menubar", "type": "frontend", "label": "MenuBarExtra", "sublabel": "App.swift · menu bar label 73%", "pos": [360, 312], "size": [220, 76] },
+    { "id": "store", "type": "backend", "label": "UsageStore", "sublabel": "180 s poll · 429 backoff", "pos": [660, 312], "size": [220, 76] },
+    { "id": "api", "type": "backend", "label": "UsageAPI", "sublabel": "request + JSON parsing", "pos": [960, 312], "size": [240, 76] },
+    { "id": "panel", "type": "frontend", "label": "PopoverView", "sublabel": "remaining limits · TimeFormat", "tag": "opens from the menu bar item", "pos": [360, 492], "size": [220, 76] },
+    { "id": "keychain", "type": "database", "label": "Login keychain", "sublabel": "Claude Code OAuth token", "pos": [660, 492], "size": [220, 76] },
+    { "id": "creds", "type": "security", "label": "Credentials", "sublabel": "read via /usr/bin/security", "pos": [960, 492], "size": [240, 76] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "token never logged or stored", "wraps": ["api", "creds"], "pad": 16 }
+  ],
+  "connections": [
+    { "id": "install-app", "from": "installer", "to": "menubar", "label": "builds, installs to /Applications", "variant": "dashed" },
+    { "id": "icon-step", "from": "icons", "to": "menubar", "label": "icon step for the remaining %", "labelDy": 24 },
+    { "id": "launch-mode", "from": "launch", "to": "store", "label": "--mock or real mode", "labelDy": 24 },
+    { "id": "label-remaining", "from": "store", "to": "menubar", "label": "remaining %", "variant": "emphasis" },
+    { "id": "panel-rows", "from": "store", "to": "panel", "label": "rows · reset times · notices" },
+    { "id": "poll", "from": "store", "to": "api", "label": "every 180 s", "variant": "emphasis" },
+    { "id": "usage-request", "from": "api", "to": "endpoint", "label": "GET /api/oauth/usage", "variant": "emphasis", "labelDy": -34 },
+    { "id": "bearer", "from": "creds", "to": "api", "label": "Bearer token", "variant": "security" },
+    { "id": "token-read", "from": "keychain", "to": "creds", "label": "read-only", "variant": "security" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Menu bar UI", "items": ["Shows remaining only (100 - utilization)", "Panel clock is English; 12/24-hour follows the Mac", "LSUIElement: no Dock icon"] },
+    { "dot": "emerald", "title": "Polling engine", "items": ["Fixed 180 s interval, rebuilt from an absolute time on wake", "429 → 300 s backoff up to 1800 s, no request while waiting", "JSONSerialization parses the unofficial response loosely"] },
+    { "dot": "rose", "title": "Token and install", "items": ["Read with /usr/bin/security, so the caller signature stays stable", "Never logged, stored, or refreshed (Claude Code owns refresh)", "npx builds from source, ad-hoc signs, installs to /Applications"] }
+  ]
+}
