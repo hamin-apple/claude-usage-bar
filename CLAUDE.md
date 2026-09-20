@@ -41,7 +41,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
 | README screenshots | `docs/screenshots/` (retake with `--mock 27 -AppleLanguages "(en)"` so no real account data appears and the panel reads in English; crop to the app's own item and panel only). `install.gif` is rendered from a real pty recording of a first `npx` install with a fresh `npm_config_cache`; keep the edits it discloses (build sped up, cache path shortened) |
 | App icon | `Resources/AppIcon.icns` (source: `Resources/app-icon.svg`) |
-| Architecture diagram | `docs/architecture.json` is the source; `docs/architecture.html` (standalone page) and `docs/architecture.png` (README image) are generated from it with the `archify` skill: `deliver architecture`, then `visual-check`, then crop the diagram panel out of the 2048x1320 light screenshot. Text is English, like the screenshots |
+| Architecture diagram | Two language variants: `docs/architecture.json` (English, used by `README.md`) and `docs/architecture-ko.json` (Korean, used by `README-ko.md`). The `.html` page and `.png` image beside each are generated from it with the `archify` skill: `deliver architecture`, then `visual-check`, then crop the diagram panel out of the 2048x1320 light screenshot. Keep both variants in step, positions included; the Korean one is the English one with the text translated (the viewer's own UI stays English) |
 
 ## Hard constraints (do not break)
 
@@ -84,6 +84,7 @@ Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recove
 
 ## Repo housekeeping
 
+- GitHub Pages serves `docs/` from `main`, so the diagram pages are at <https://hamin-apple.github.io/claude-usage-bar/architecture.html> and `.../architecture-ko.html`. Both READMEs link there, so renaming or removing those files breaks the links. There is no `docs/index.html`, so the site root is a 404.
 - `.github/dependabot.yml` opens monthly PRs for GitHub Actions versions only. There are no package dependencies to update.
 - `SECURITY.md` points reporters at GitHub private vulnerability reporting (enabled on the repo) and tells them never to include a token. Keep the "not a vulnerability" list in sync with the README's Important notices.
 

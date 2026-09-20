@@ -1,0 +1,292 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Claude Usage Bar 시스템 구조",
+    "quality_profile": "showcase",
+    "views": [
+      {
+        "id": "poll-path",
+        "label": "폴링 경로",
+        "focus": [
+          "store",
+          "api",
+          "endpoint",
+          "creds",
+          "keychain"
+        ],
+        "note": "토큰을 읽어 180초마다 비공식 엔드포인트를 호출하는 주 경로입니다."
+      },
+      {
+        "id": "menu-bar-ui",
+        "label": "메뉴 바 UI",
+        "focus": [
+          "icons",
+          "menubar",
+          "panel",
+          "store"
+        ],
+        "note": "남은 한도가 메뉴 바 라벨과 패널에 도달하는 과정만 봅니다."
+      },
+      {
+        "id": "install",
+        "label": "설치 경로",
+        "focus": [
+          "installer",
+          "menubar",
+          "launch"
+        ],
+        "note": "npx 가 소스를 빌드해 /Applications 에 설치하고, 실행 인자를 검사합니다."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "installer",
+      "type": "cloud",
+      "label": "npx 설치 스크립트",
+      "sublabel": "Scripts/npx-install.sh",
+      "tag": "소스에서 빌드",
+      "pos": [
+        60,
+        120
+      ],
+      "size": [
+        240,
+        70
+      ]
+    },
+    {
+      "id": "icons",
+      "type": "frontend",
+      "label": "IconProvider",
+      "sublabel": "Resources/icons/*.svg",
+      "pos": [
+        360,
+        120
+      ],
+      "size": [
+        220,
+        66
+      ]
+    },
+    {
+      "id": "launch",
+      "type": "security",
+      "label": "LaunchOptions",
+      "sublabel": "인자 엄격 검사 · 실패 시 exit 2",
+      "pos": [
+        660,
+        120
+      ],
+      "size": [
+        220,
+        66
+      ]
+    },
+    {
+      "id": "endpoint",
+      "type": "external",
+      "label": "api.anthropic.com",
+      "sublabel": "/api/oauth/usage · 비공식",
+      "pos": [
+        960,
+        120
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "menubar",
+      "type": "frontend",
+      "label": "MenuBarExtra",
+      "sublabel": "App.swift · 메뉴 바 라벨 73%",
+      "pos": [
+        360,
+        312
+      ],
+      "size": [
+        220,
+        76
+      ]
+    },
+    {
+      "id": "store",
+      "type": "backend",
+      "label": "UsageStore",
+      "sublabel": "180초 폴링 · 429 백오프",
+      "pos": [
+        660,
+        312
+      ],
+      "size": [
+        220,
+        76
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "UsageAPI",
+      "sublabel": "요청 + JSON 파싱",
+      "pos": [
+        960,
+        312
+      ],
+      "size": [
+        240,
+        76
+      ]
+    },
+    {
+      "id": "panel",
+      "type": "frontend",
+      "label": "PopoverView",
+      "sublabel": "남은 한도 패널 · TimeFormat",
+      "tag": "메뉴 바 항목에서 열림",
+      "pos": [
+        360,
+        492
+      ],
+      "size": [
+        220,
+        76
+      ]
+    },
+    {
+      "id": "keychain",
+      "type": "database",
+      "label": "로그인 키체인",
+      "sublabel": "Claude Code OAuth 토큰",
+      "pos": [
+        660,
+        492
+      ],
+      "size": [
+        220,
+        76
+      ]
+    },
+    {
+      "id": "creds",
+      "type": "security",
+      "label": "Credentials",
+      "sublabel": "/usr/bin/security 로 읽기",
+      "pos": [
+        960,
+        492
+      ],
+      "size": [
+        240,
+        76
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "토큰은 기록·저장하지 않음",
+      "wraps": [
+        "api",
+        "creds"
+      ],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "id": "install-app",
+      "from": "installer",
+      "to": "menubar",
+      "label": "빌드 후 /Applications 설치",
+      "variant": "dashed"
+    },
+    {
+      "id": "icon-step",
+      "from": "icons",
+      "to": "menubar",
+      "label": "남은 %에 맞는 아이콘",
+      "labelDy": 24
+    },
+    {
+      "id": "launch-mode",
+      "from": "launch",
+      "to": "store",
+      "label": "--mock / 실제 모드",
+      "labelDy": 24
+    },
+    {
+      "id": "label-remaining",
+      "from": "store",
+      "to": "menubar",
+      "label": "남은 %",
+      "variant": "emphasis"
+    },
+    {
+      "id": "panel-rows",
+      "from": "store",
+      "to": "panel",
+      "label": "한도 행 · 리셋 시각 · 안내"
+    },
+    {
+      "id": "poll",
+      "from": "store",
+      "to": "api",
+      "label": "180초마다 요청",
+      "variant": "emphasis"
+    },
+    {
+      "id": "usage-request",
+      "from": "api",
+      "to": "endpoint",
+      "label": "GET /api/oauth/usage",
+      "variant": "emphasis",
+      "labelDy": -34
+    },
+    {
+      "id": "bearer",
+      "from": "creds",
+      "to": "api",
+      "label": "Bearer 토큰",
+      "variant": "security"
+    },
+    {
+      "id": "token-read",
+      "from": "keychain",
+      "to": "creds",
+      "label": "읽기 전용",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "메뉴 바 UI",
+      "items": [
+        "남은 한도만 표시 (100 - utilization)",
+        "패널 시계는 영어, 12/24시간은 시스템 설정을 따름",
+        "LSUIElement: Dock 아이콘 없음"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "폴링 엔진",
+      "items": [
+        "180초 고정 간격, 절전 복귀 시 절대 시각으로 재계산",
+        "429 → 300초 백오프(최대 1800초), 대기 중 요청 없음",
+        "JSONSerialization 으로 비공식 응답을 느슨하게 파싱"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "토큰과 설치",
+      "items": [
+        "/usr/bin/security 로 읽어 호출자 서명을 고정",
+        "기록·저장·갱신하지 않음 (갱신은 Claude Code 담당)",
+        "npx 로 소스 빌드 → ad-hoc 서명 후 /Applications 설치"
+      ]
+    }
+  ]
+}
