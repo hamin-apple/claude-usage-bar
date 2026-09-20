@@ -76,6 +76,11 @@ Observed once, cause not confirmed: after a burst of accidental real-mode launch
 
 Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recovery, Swift versions below 5.9, Intel Macs, keychain item names when `CLAUDE_CONFIG_DIR` is customized.
 
+## Repo housekeeping
+
+- `.github/dependabot.yml` opens monthly PRs for GitHub Actions versions only. There are no package dependencies to update.
+- `SECURITY.md` points reporters at GitHub private vulnerability reporting (enabled on the repo) and tells them never to include a token. Keep the "not a vulnerability" list in sync with the README's Important notices.
+
 ## Releases
 
 - The version lives in two places that must match: `CFBundleShortVersionString` in `Resources/Info.plist` and `version` in `package.json` (CI checks this, and on a `v*` tag also checks the tag). Bump `CFBundleVersion` by one each release.
