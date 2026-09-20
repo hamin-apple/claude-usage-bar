@@ -3,6 +3,7 @@
 [English](README.md) | **한국어**
 
 [![CI](https://github.com/hamin-apple/claude-usage-bar/actions/workflows/ci.yml/badge.svg)](https://github.com/hamin-apple/claude-usage-bar/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/hamin-apple/claude-usage-bar)](https://github.com/hamin-apple/claude-usage-bar/releases/latest)
 [![License: MIT (code only)](https://img.shields.io/badge/license-MIT%20%28code%20only%29-blue)](LICENSE)
 ![macOS 13+](https://img.shields.io/badge/macOS-13%2B-black?logo=apple)
 ![Apple Silicon only](https://img.shields.io/badge/Apple%20Silicon-only-lightgrey)
