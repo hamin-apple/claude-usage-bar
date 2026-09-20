@@ -215,7 +215,8 @@ Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resou
 Sources/ClaudeUsageBarChecks/Checks.swift  logic checks (swift run ClaudeUsageBarChecks)
 Fixtures/usage_sample.json
 docs/screenshots/        README screenshots (mock mode) and install.gif
-docs/architecture.json, docs/architecture-ko.json  architecture diagram sources, English and Korean (the .html page and .png image next to each are generated from it)
+docs/architecture.json    architecture diagram source (architecture.html, architecture.png are generated from it)
+docs/architecture-ko.json Korean text of the same diagram (architecture-ko.png for README-ko.md)
 Scripts/bundle.sh       builds and ad-hoc signs build/ClaudeUsageBar.app
 Scripts/npx-install.sh  npx entry point: bundle.sh, then install to /Applications
 package.json            npx metadata only (private, not published to npm)
