@@ -10,7 +10,7 @@ The following artwork is **excluded** from that license, and no permission to us
 - `Resources/AppIcon.icns` and `Resources/app-icon.svg` (app icon)
 - `docs/screenshots/menu-bar.png` and `docs/screenshots/panel.png` (README screenshots, which show the menu bar icon)
 
-These files depict the Claude Code mascot, which belongs to Anthropic, PBC. They are included only so the app builds and runs for personal use.
+These files depict the Claude Code mascot, which belongs to Anthropic, PBC. The mascot artwork comes from <https://claude.dev>. They are included only so the app builds and runs for personal use.
 If you redistribute the app or a fork, replace them with your own artwork (see "Replacing the menu bar icons" and "App icon" in the README).
 
 ## Trademarks

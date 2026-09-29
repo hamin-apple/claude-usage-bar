@@ -226,5 +226,5 @@ package.json            npx metadata only (private, not published to npm)
 
 The source code is released under the [MIT License](LICENSE).
 
-The artwork is **not** covered by that license: the Clawd menu bar icons (`Resources/icons/`) and the app icon (`AppIcon.icns`, `app-icon.svg`) depict the Claude Code mascot, which belongs to Anthropic, PBC.
+The artwork is **not** covered by that license: the Clawd menu bar icons (`Resources/icons/`) and the app icon (`AppIcon.icns`, `app-icon.svg`) depict the Claude Code mascot, which belongs to Anthropic, PBC. The mascot artwork comes from <https://claude.dev>.
 They are included only so the app runs for personal use. If you redistribute the app or a fork, replace them with your own artwork. See [NOTICE.md](NOTICE.md).

@@ -226,5 +226,5 @@ package.json            npx metadata only (private, not published to npm)
 
 소스 코드는 [MIT 라이선스](LICENSE)로 공개합니다.
 
-아트워크는 이 라이선스에 **포함되지 않습니다.** Clawd 메뉴 막대 아이콘(`Resources/icons/`)과 앱 아이콘(`AppIcon.icns`, `app-icon.svg`)은 Anthropic, PBC 소유의 Claude Code 마스코트를 그린 것입니다.
+아트워크는 이 라이선스에 **포함되지 않습니다.** Clawd 메뉴 막대 아이콘(`Resources/icons/`)과 앱 아이콘(`AppIcon.icns`, `app-icon.svg`)은 Anthropic, PBC 소유의 Claude Code 마스코트를 그린 것입니다. 마스코트 아트워크의 출처는 <https://claude.dev>입니다.
 개인 용도로 앱을 실행할 수 있도록 넣어 두었을 뿐입니다. 앱이나 포크를 재배포한다면 직접 만든 아트워크로 바꾸세요. [NOTICE.md](NOTICE.md)를 참고하세요.
