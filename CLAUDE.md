@@ -12,6 +12,7 @@ A native macOS menu bar app (SwiftUI `MenuBarExtra`, SwiftPM, no third-party dep
 swift build                                        # debug build, checks the code compiles
 .build/debug/ClaudeUsageBar --mock 27              # UI check with no API call (27% used -> 73% left)
 .build/debug/ClaudeUsageBar --mock-error expired   # also: login | ratelimit | offline (combine with --mock)
+.build/debug/ClaudeUsageBar --mock 27 --mock-accounts 3  # several fake accounts, no discovery, no API call
 .build/debug/ClaudeUsageBar --check-token          # token state only, never prints the token
 .build/debug/ClaudeUsageBar --render-icons /tmp/i  # PNGs of every icon + sheet.png, to eyeball SVG rendering
 swift run ClaudeUsageBarChecks                     # logic checks: parsing, remaining rule, backoff, launch arguments
@@ -35,7 +36,9 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 | Logic checks | `Sources/ClaudeUsageBarChecks/Checks.swift` |
 | Polling loop, backoff application, status notices, wake handling | `Sources/ClaudeUsageBar/UsageStore.swift` |
 | Endpoint call, response parsing, row titles, `BackoffPolicy`, User-Agent | `Sources/ClaudeUsageBar/UsageAPI.swift` |
-| Token reading, expiry check, plan (`subscriptionType`) | `Sources/ClaudeUsageBar/Credentials.swift` |
+| Token reading, expiry check, plan (`subscriptionType`), picking one token for an account | `Sources/ClaudeUsageBar/Credentials.swift` |
+| Finding `~/.claude*` folders, keychain item names, merging folders of one login | `Sources/ClaudeUsageBar/Accounts.swift` |
+| Account sections, menu bar account picker | `Sources/ClaudeUsageBar/PopoverView.swift` (`AccountSection`); choice and per-account pollers in `UsageStore.swift` (`UsageStore`, `AccountUsage`) |
 | Icon step selection, SVG loading, `--render-icons` | `Sources/ClaudeUsageBar/IconProvider.swift` |
 | Menu bar icons (SVG, used as-is) | `Resources/icons/` |
 | `npx github:` installer (build, quit, install, open) | `package.json`, `Scripts/npx-install.sh` |
@@ -50,7 +53,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 - Never call the API with an expired token (expiry check has a 60 s margin). Expired tokens produce long 429s, not auth errors.
 - **Never log, print, store, or commit the token or request headers.** `--check-token` prints only metadata. Do not add debug output of responses that includes headers.
 - Never refresh the token with the refresh token. Claude Code owns refreshing; the user runs `claude` once.
-- Never run two real-mode instances at once (they share one rate limit). Real API calls are for final integration checks only; use `--mock` and a local fake server for everything else.
+- Never run two real-mode instances at once (they share one rate limit). Inside the app, each account (one login + organization) is polled by exactly one `AccountUsage`, with its own backoff; folders of the same login must stay merged so one limit is never polled twice. Real API calls are for final integration checks only; use `--mock` and a local fake server for everything else.
 - Menu bar SVGs are used exactly as supplied: no recoloring in code, `isTemplate = false`. Icon steps come from scanning the folder, not a hardcoded list.
 - `--api-url` must stay restricted to loopback hosts so the token can only go to the real endpoint or localhost.
 - **Launch arguments are strict.** Unknown or malformed arguments exit with code 2 (`LaunchOptions.parse`). Keep it that way: a misparsed flag used to fall through to real mode and call the API. When scripting launches, pass each argument as a separate word. In zsh an unquoted `$args` is not word-split, so `"$BIN" $args` sends `--mock 27` as one argument (now an error, previously a silent real-mode start that hit the API several times in a minute).
@@ -59,9 +62,10 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 ## Design decisions and why
 
 - **Token via `/usr/bin/security`, not `SecItemCopyMatching`.** Keychain "Always Allow" is bound to the caller's code signature. An ad-hoc signed app changes signature on every build and would re-prompt every time; `security` is always the same caller.
-- **Parse with `JSONSerialization`, not `Codable`.** The endpoint is unofficial. Read only needed fields; unknown or missing fields must never crash. `resets_at` has microseconds and an offset, so try the fractional-seconds formatter first, then the plain one. Model-specific limits (`seven_day_opus`/`seven_day_sonnet`, or extra `limits` entries) have only ever been seen as `null`, so that path is untested against real data.
+- **Parse with `JSONSerialization`, not `Codable`.** The endpoint is unofficial. Read only needed fields; unknown or missing fields must never crash. `resets_at` has microseconds and an offset, so try the fractional-seconds formatter first, then the plain one. `seven_day_opus`/`seven_day_sonnet` have only ever been seen as `null`. On a Max plan the per-model limit arrives as a `limits` entry with `kind: "weekly_scoped"` and `scope: {"model": {"display_name": "Fable"}}` (shape taken from Claude Code's own parser), shown as `Weekly · Fable`; a plain-string `scope` is still accepted.
+- **Several accounts come from config folders, not from a list the user edits.** Claude Code names a non-default folder's keychain item `Claude Code-credentials-` + the first 8 hex digits of SHA-256 of the folder path (checked against real items); `~/.claude` uses the plain name and keeps its `.claude.json` in `~`. Folders are merged on `(accountUuid, organizationUuid)` from `oauthAccount`, because two folders can hold separate tokens for one login and that login has one limit. The menu bar choice is stored as a folder name, the app's only stored setting (README Privacy says so). Mock mode never runs discovery, since discovery reads the keychain.
 - **A limit whose `resets_at` is in the past counts as fully available** until the next fetch.
-- **Plan badge** is `claudeAiOauth.subscriptionType` from the same credentials JSON (`"pro"` was the only value seen; other plans' strings are unverified). It is undocumented: treat it as optional, never branch behavior on it, and format it generically (`PlanName.display`). It is not a secret and may be printed by `--check-token`; the tokens still must not be.
+- **Plan badge** is `claudeAiOauth.subscriptionType` from the same credentials JSON (`"pro"` and `"max"` have been seen; other plans' strings are unverified). It is undocumented: treat it as optional, never branch behavior on it, and format it generically (`PlanName.display`). It is not a secret and may be printed by `--check-token`; the tokens still must not be.
 - **Swift 5 language mode, `swift-tools-version:5.9`** so Command Line Tools 15 can build it. The code also builds in Swift 6 mode; keep it that way. Two things exist for that: `locateIconDirectory()` is `nonisolated` (Swift 5 mode rejects a main-actor call in a default argument), and the login toggle passes a **closure** to `Binding(set:)`. Passing a method reference there crashes the Swift 6 compiler.
 - **`Task.sleep` does not advance while the Mac sleeps**, so on wake the loop is rebuilt from an absolute `nextPollAt`.
 - **Login toggle** follows the result of `register()`/`unregister()` and re-reads real status when the panel opens, because status read right after `register()` can lag.
@@ -70,7 +74,7 @@ pkill -x ClaudeUsageBar; ./Scripts/bundle.sh && ditto build/ClaudeUsageBar.app /
 
 ## Testing
 
-There is no XCTest target: Command Line Tools ship no XCTest, and the repo must stay checkable without Xcode. Instead `Sources/ClaudeUsageBarChecks` is a second executable that asserts and exits 1 on failure (`swift run ClaudeUsageBarChecks`). It compiles `UsageAPI.swift` and `LaunchOptions.swift` through symlinks, so it checks the same source the app uses; add a symlink when a check needs another file, and keep the checks free of network, keychain, and AppKit.
+There is no XCTest target: Command Line Tools ship no XCTest, and the repo must stay checkable without Xcode. Instead `Sources/ClaudeUsageBarChecks` is a second executable that asserts and exits 1 on failure (`swift run ClaudeUsageBarChecks`). It compiles `UsageAPI.swift`, `LaunchOptions.swift`, `TimeFormat.swift`, and `Accounts.swift` through symlinks, so it checks the same source the app uses; add a symlink when a check needs another file, and keep the checks free of network, keychain, and AppKit.
 
 `Package.swift` declares that target **only when `Sources/ClaudeUsageBarChecks/UsageAPI.swift` exists**, and `package.json` ships `Sources/ClaudeUsageBar/` rather than `Sources/`. npm does not pack symlinks, so an npm-installed copy that carried the checks target would fail to build, which would break `npx` installs. If you add sources to the checks target, keep both of those in step, and verify with `npm pack` + `swift build` on the extracted tarball. `.github/workflows/ci.yml` runs on every PR and push to `main` (macOS runner): the logic checks, Swift 5 and Swift 6 mode builds, launch-argument rejection (exit 2), `--render-icons` for every SVG, the npx installer's argument check and `npm pack` contents, and a full `npx --yes . --no-open` install. CI must never start the app in real mode or read a token. Manual verification used:
 
@@ -80,7 +84,7 @@ There is no XCTest target: Command Line Tools ship no XCTest, and the repo must 
 
 Observed once, cause not confirmed: after a burst of accidental real-mode launches (see the launch-arguments constraint above) the menu bar showed the error icon with `?` and recovered on its own within minutes without a restart. That is consistent with a 429 followed by the backoff retry, but the panel notice was not captured, so the 429 path is not proven end to end.
 
-Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recovery, Swift versions below 5.9, Intel Macs, keychain item names when `CLAUDE_CONFIG_DIR` is customized.
+Not verified: real wake-from-sleep behavior, a confirmed 429-then-success recovery, Swift versions below 5.9, Intel Macs, `CLAUDE_CONFIG_DIR` paths with a trailing slash or symlinks (the hash is of the path string as given), the keychain prompt flow for a never-read suffixed item.
 
 ## Repo housekeeping
 

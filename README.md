@@ -37,7 +37,7 @@ Read these before using the app.
   I have not confirmed that Anthropic's terms allow this, and they may not. Read the current terms yourself. **Use this app at your own risk**, including any consequence for your Claude account.
 - **Request identity.** To be accepted by the endpoint, the app sends `User-Agent: claude-code/<version>`, the same identifier the Claude Code CLI uses, so its requests look like Claude Code's.
   If you are not comfortable with that, do not use this app.
-- **Token handling.** The token is read right before each request, kept only in memory, never written to logs or files, and never refreshed by the app. The relevant code is short: `Credentials.swift` and `UsageAPI.swift`.
+- **Token handling.** The token is read right before each request, kept only in memory, never written to logs or files, and never refreshed by the app. The relevant code is short: `Credentials.swift`, `Accounts.swift` (which keychain items are read), and `UsageAPI.swift`.
 
 ## Privacy
 
@@ -45,14 +45,15 @@ The app asks you for nothing: no account, no sign-in screen, no name, email, or 
 
 | What | Where it comes from | Where it goes |
 |---|---|---|
-| OAuth access token | Claude Code's keychain item (`Claude Code-credentials`), or `~/.claude/.credentials.json` | Only `https://api.anthropic.com/api/oauth/usage`, in the `Authorization` header. Kept in memory only |
+| OAuth access token | Claude Code's keychain items (`Claude Code-credentials`, plus `Claude Code-credentials-<hash>` for each `~/.claude-*` folder used with `CLAUDE_CONFIG_DIR`), or `<folder>/.credentials.json` | Only `https://api.anthropic.com/api/oauth/usage`, in the `Authorization` header. Kept in memory only |
+| Account email, account and organization ids | `oauthAccount` in each folder's `.claude.json` (`~/.claude.json` for `~/.claude`) | The email is the account heading when there are several accounts. The ids are used only to merge folders signed in to the same account. Never sent anywhere |
 | Plan (`subscriptionType`, e.g. `pro`) | The same keychain entry | Shown as the badge; never sent anywhere |
 | Claude Code version | Running `claude --version` | Sent as `User-Agent: claude-code/<version>` (see Important notices) |
 | Usage percentages and reset times | The API response | Shown in the menu bar and panel; kept in memory only |
 
 - That endpoint is the only network destination in the code. `--api-url` for testing accepts loopback addresses only, so the token cannot be sent to another host.
-- Nothing is written to disk: no settings, caches, logs, or cookies (the HTTP session is ephemeral). The only file output is the icon PNGs from `--render-icons`. Launch at Login is recorded by macOS itself, not by the app.
-- The token and request headers are never printed. `--check-token` prints only metadata (state, source, plan, time left, token length).
+- Nothing is written to disk except one setting: which account the menu bar shows, stored in the app's preferences as a config folder name (e.g. `.claude-work`), never an email or id. No caches, logs, or cookies (the HTTP session is ephemeral). The only file output is the icon PNGs from `--render-icons`. Launch at Login is recorded by macOS itself, not by the app.
+- The token and request headers are never printed. `--check-token` prints only metadata (config folder, state, source, plan, time left, token length).
 - As with any request, Anthropic's server sees your IP address and account through the token, the same as when you use Claude Code.
 
 ## Requirements
@@ -63,6 +64,7 @@ The app asks you for nothing: no account, no sign-in screen, no name, email, or 
 - **Claude Code installed and signed in with your subscription account.**
   The app has no login of its own. It borrows the OAuth token that Claude Code stores in the macOS keychain (`Claude Code-credentials`),
   and falls back to `~/.claude/.credentials.json` if the keychain read fails.
+  Extra accounts signed in through `CLAUDE_CONFIG_DIR` are found automatically when their folder is named `~/.claude-<anything>` (see [Several accounts](#several-accounts)).
 
 ## Install with npx
 
@@ -117,6 +119,7 @@ To run the binary directly during development, use `swift build` and then `.buil
 ### Keychain prompt on first run
 
 The first time the token is read, a keychain access prompt appears once. Choose **"Always Allow"**.
+With several accounts, the prompt appears once for each account folder's keychain item. An unanswered prompt holds up only that account.
 The token is read through `/usr/bin/security` rather than by the app itself, so rebuilding the ad-hoc signed app does not invalidate the permission.
 
 ### Launch at Login
@@ -146,6 +149,17 @@ The "Launch at Login" toggle in the panel uses `SMAppService`. Copy the app to `
 - If the token expires, run `claude` once in a terminal and Claude Code will refresh it.
 - The plan badge comes from the `subscriptionType` field of the same keychain entry. It is undocumented, so the badge is simply hidden when the field is missing or unreadable. It appears after the first successful token read.
 - Requests share the same rate limit, so do not run more than one instance (or other widgets using the same API) at the same time.
+
+### Several accounts
+
+If you use more than one Claude Code login through `CLAUDE_CONFIG_DIR`, the app shows each one.
+
+- **Which folders.** `~/.claude` (the default) and every `~/.claude-*` folder, plus the `CLAUDE_CONFIG_DIR` the app itself was started with. A folder is skipped if its `.claude.json` names no signed-in account. Folders are re-scanned on each manual refresh.
+- **Same login, one account.** Folders signed in to the same account and organization share one limit, so they appear once and are polled once, with the newest valid token among them.
+- **Each account on its own.** Every account has its own 180-second cycle, 429 backoff, and notices. A 429 on one account does not stop the others. Requests are spaced 5 seconds apart. "Refresh Now" is greyed out only when every account is backing off.
+- **Panel.** One section per account, headed by its email and plan badge, with its own update time. With a single account the panel looks the same as before.
+- **Menu bar.** Shows one account, picked under "Menu bar" in the panel: **Lowest session** (default: the account with the least session left) or a fixed account.
+- Folders outside `~` with other names are found only through the app's own `CLAUDE_CONFIG_DIR`, which a Finder or login launch does not have.
 
 ### Menu bar states
 
@@ -183,8 +197,9 @@ The source is `Resources/app-icon.svg`. Build an `iconset` from PNGs of each siz
 |---|---|
 | `--mock <used%>` | Makes no API call and shows the given session **used** percentage (`--mock 27` shows 73% left) |
 | `--mock-error <expired\|login\|ratelimit\|offline>` | Shows each error state. Combine with `--mock` to see the case where the last value is kept |
+| `--mock-accounts <1-4>` | Shows that many fake accounts (implies `--mock`). `--mock` and `--mock-error` apply to the first one |
 | `--render-icons <dir>` | Renders the icons with AppKit and saves them as PNGs |
-| `--check-token` | Prints only the token state (valid/expired/not found, source, plan, time left), never the token itself |
+| `--check-token` | Prints only the token state (valid/expired/not found, source, plan, time left), one line per config folder, never the token itself |
 | `--api-url <url>` | Points the request at a local server (`127.0.0.1`, `localhost`, `::1`). For testing |
 | `--help` | Prints the usage |
 
@@ -209,6 +224,7 @@ Sources/ClaudeUsageBar/
   UsageStore.swift     state, polling loop, backoff handling
   UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
   Credentials.swift    token reading, expiry check
+  Accounts.swift       finds ~/.claude* folders, keychain item names, merges folders of one login
   IconProvider.swift   picks/loads/caches the SVG for the remaining amount, --render-icons
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)

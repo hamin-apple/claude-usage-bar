@@ -51,21 +51,23 @@ struct MenuBarLabel: View {
     }
 
     private var image: NSImage? {
-        switch store.status {
-        case .loading where store.remaining == nil:
+        guard let usage = store.menuBarAccount else { return icons.loadingImage() }
+        switch usage.status {
+        case .loading where usage.remaining == nil:
             return icons.loadingImage()
         case .expired, .loginRequired:
-            return icons.errorImage(lastRemaining: store.remaining)
+            return icons.errorImage(lastRemaining: usage.remaining)
         default:
-            guard let remaining = store.remaining else { return icons.errorImage(lastRemaining: nil) }
+            guard let remaining = usage.remaining else { return icons.errorImage(lastRemaining: nil) }
             return icons.image(forRemaining: remaining)
         }
     }
 
     private var text: String {
-        if store.status == .loading && store.remaining == nil { return "…" }
-        if store.status.showsErrorIcon { return "?" }
-        guard let remaining = store.remaining else { return "?" }
-        return store.status.isWarning ? "\(remaining)%!" : "\(remaining)%"
+        guard let usage = store.menuBarAccount else { return "…" }
+        if usage.status == .loading && usage.remaining == nil { return "…" }
+        if usage.status.showsErrorIcon { return "?" }
+        guard let remaining = usage.remaining else { return "?" }
+        return usage.status.isWarning ? "\(remaining)%!" : "\(remaining)%"
     }
 }

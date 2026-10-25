@@ -103,12 +103,19 @@ enum UsageAPI {
         if modelRows.isEmpty {
             for entry in limits {
                 guard let kind = entry["kind"] as? String, kind != "session", kind != "weekly_all",
-                      let row = row(id: "limit-\(kind)", title: "Weekly · \((entry["scope"] as? String) ?? kind)",
+                      let row = row(id: "limit-\(kind)", title: "Weekly · \(scopeName(entry["scope"]) ?? kind)",
                                     window: nil, fallback: entry) else { continue }
                 modelRows.append(row)
             }
         }
         return rows + modelRows
+    }
+
+    // `scope` is a plain string, or `{"model":{"display_name":"Fable"}}` for `weekly_scoped` (seen on a Max plan).
+    private static func scopeName(_ scope: Any?) -> String? {
+        if let name = scope as? String { return name }
+        let model = (scope as? [String: Any])?["model"] as? [String: Any]
+        return model?["display_name"] as? String
     }
 
     private static func row(id: String, title: String, window: [String: Any]?, fallback: [String: Any]?) -> LimitRow? {

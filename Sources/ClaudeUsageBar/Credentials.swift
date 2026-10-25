@@ -18,18 +18,44 @@ enum TokenState: Sendable {
 }
 
 enum CredentialsReader {
-    static let keychainService = "Claude Code-credentials"
     static let expiryMargin: TimeInterval = 60
 
     // Always re-reads: Claude Code may have refreshed the token since the last call.
-    static func read(now: Date = Date()) async -> TokenState {
-        if let json = await keychainJSON(), let state = interpret(json, source: .keychain, now: now) {
-            return state
+    static func read(_ source: AccountSource, now: Date = Date()) async -> TokenState {
+        for service in source.keychainServices {
+            if let json = await keychainJSON(service: service), let state = interpret(json, source: .keychain, now: now) {
+                return state
+            }
         }
-        if let json = fileJSON(), let state = interpret(json, source: .file, now: now) {
+        if let json = try? Data(contentsOf: source.credentialsFile), let state = interpret(json, source: .file, now: now) {
             return state
         }
         return .notFound
+    }
+
+    // Directories of one account share its limit: use the valid token that expires last.
+    static func read(_ account: Account, now: Date = Date()) async -> TokenState {
+        var states: [TokenState] = []
+        for source in account.sources {
+            states.append(await read(source, now: now))
+        }
+        return best(states)
+    }
+
+    static func best(_ states: [TokenState]) -> TokenState {
+        var valid: [Credentials] = []
+        var expired: TokenState?
+        for state in states {
+            switch state {
+            case .valid(let credentials): valid.append(credentials)
+            case .expired: expired = expired ?? state
+            case .notFound: break
+            }
+        }
+        if let newest = valid.max(by: { ($0.expiresAt ?? .distantPast) < ($1.expiresAt ?? .distantPast) }) {
+            return .valid(newest)
+        }
+        return expired ?? .notFound
     }
 
     static func interpret(_ data: Data, source: Credentials.Source, now: Date) -> TokenState? {
@@ -46,12 +72,12 @@ enum CredentialsReader {
     }
 
     // Goes through /usr/bin/security so the keychain "Always Allow" stays bound to a stable caller.
-    private static func keychainJSON() async -> Data? {
+    private static func keychainJSON(service: String) async -> Data? {
         await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .utility).async {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/security")
-                process.arguments = ["find-generic-password", "-s", keychainService, "-w"]
+                process.arguments = ["find-generic-password", "-s", service, "-w"]
                 let output = Pipe()
                 process.standardOutput = output
                 process.standardError = FileHandle.nullDevice
@@ -74,25 +100,24 @@ enum CredentialsReader {
         }
     }
 
-    private static func fileJSON() -> Data? {
-        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/.credentials.json")
-        return try? Data(contentsOf: url)
-    }
-
-    // --check-token: prints token state only, never the token itself.
+    // --check-token: prints token state only, never the token itself. One line per config directory,
+    // labeled by directory name; directories with the same `account=` number share one limit.
     static func printStatus() async -> Int32 {
-        switch await read() {
-        case .valid(let c):
-            let remaining = c.expiresAt.map { "\(Int($0.timeIntervalSinceNow))s" } ?? "unknown"
-            print("state=valid source=\(c.source.rawValue) plan=\(c.subscriptionType ?? "unknown") expiresIn=\(remaining) tokenLength=\(c.accessToken.count)")
-            return 0
-        case .expired(let source, let expiredAt):
-            let ago = expiredAt.map { "\(Int(-$0.timeIntervalSinceNow))s ago" } ?? "unknown"
-            print("state=expired source=\(source.rawValue) expired=\(ago)")
-            return 0
-        case .notFound:
-            print("state=notfound")
-            return 0
+        for (index, account) in AccountDiscovery.discover().enumerated() {
+            for source in account.sources {
+                let prefix = "account=\(index + 1) config=\(source.name)"
+                switch await read(source) {
+                case .valid(let c):
+                    let remaining = c.expiresAt.map { "\(Int($0.timeIntervalSinceNow))s" } ?? "unknown"
+                    print("\(prefix) state=valid source=\(c.source.rawValue) plan=\(c.subscriptionType ?? "unknown") expiresIn=\(remaining) tokenLength=\(c.accessToken.count)")
+                case .expired(let source, let expiredAt):
+                    let ago = expiredAt.map { "\(Int(-$0.timeIntervalSinceNow))s ago" } ?? "unknown"
+                    print("\(prefix) state=expired source=\(source.rawValue) expired=\(ago)")
+                case .notFound:
+                    print("\(prefix) state=notfound")
+                }
+            }
         }
+        return 0
     }
 }

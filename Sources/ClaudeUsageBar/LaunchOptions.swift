@@ -7,17 +7,20 @@ enum MockError: String {
 struct LaunchOptions: Sendable {
     var mockUtilization: Double?
     var mockError: MockError?
+    var mockAccounts = 1
+    var mockAccountsGiven = false
     var renderIconsDirectory: String?
     var checkToken = false
     var apiURL: URL?
 
-    var isMock: Bool { mockUtilization != nil || mockError != nil }
+    var isMock: Bool { mockUtilization != nil || mockError != nil || mockAccountsGiven }
 
     static let usage = """
         Usage: ClaudeUsageBar [options]
           --mock [used%]                      show a fake session usage, no API call (default 30)
           --mock-error expired|login|ratelimit|offline
                                               show an error state (combine with --mock)
+          --mock-accounts <1-4>               show that many fake accounts (implies --mock)
           --render-icons <dir>                render every icon to PNG and exit
           --check-token                       print token state (never the token) and exit
           --api-url <http://127.0.0.1:port/>  send requests to a local server (loopback only)
@@ -69,6 +72,13 @@ struct LaunchOptions: Sendable {
                     throw LaunchError(message: "invalid value '\(raw)' for --mock-error")
                 }
                 options.mockError = error
+            case "--mock-accounts":
+                let raw = try value(after: arg)
+                guard let count = Int(raw), (1...4).contains(count) else {
+                    throw LaunchError(message: "--mock-accounts must be a whole number from 1 to 4")
+                }
+                options.mockAccounts = count
+                options.mockAccountsGiven = true
             case "--render-icons":
                 options.renderIconsDirectory = try value(after: arg)
             case "--api-url":
@@ -92,6 +102,9 @@ struct LaunchOptions: Sendable {
                 }
             }
             index += 1
+        }
+        if options.mockAccountsGiven && options.mockUtilization == nil && options.mockError == nil {
+            options.mockUtilization = 30
         }
         return options
     }
