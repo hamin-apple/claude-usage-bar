@@ -1,9 +1,9 @@
 // Checks for the pure logic: response parsing, the remaining-amount rule,
-// backoff, and launch-argument parsing. Run with `swift run ClaudeUsageBarChecks`.
+// account discovery, backoff, and launch-argument parsing. Run with `swift run ClaudeUsageBarChecks`.
 //
 // This is an executable rather than an XCTest target on purpose: Command Line
 // Tools ship no XCTest, and the repo must stay buildable and checkable without
-// Xcode. UsageAPI.swift and LaunchOptions.swift are symlinked into this target,
+// Xcode. UsageAPI.swift, LaunchOptions.swift, TimeFormat.swift, and Accounts.swift are symlinked into this target,
 // so they are compiled from the same source the app uses.
 //
 // Nothing here touches the network, the keychain, or the real API.
@@ -116,6 +116,60 @@ enum Checks {
     equal("limits array: model id", fromLimits[2].id, "limit-weekly_model")
     equal("limits array: model title uses scope", fromLimits[2].title, "Weekly · opus")
 
+    // Shape seen on a Max plan: the model name is nested in `scope`.
+    let scopedLimit = #"""
+    {"limits":[{"kind":"session","percent":15},{"kind":"weekly_all","percent":25},
+               {"kind":"weekly_scoped","percent":5,"scope":{"model":{"display_name":"Fable"}}},
+               {"kind":"weekly_other","percent":5,"scope":{"model":{}}}]}
+    """#
+    let fromScoped = UsageAPI.parse(Data(scopedLimit.utf8))
+    equal("limits array: nested scope title", fromScoped[2].title, "Weekly · Fable")
+    equal("limits array: unreadable scope falls back to kind", fromScoped[3].title, "Weekly · weekly_other")
+
+    // MARK: - Accounts (synthetic paths only; nothing reads the keychain)
+
+    let exampleHome = URL(fileURLWithPath: "/Users/example")
+    let defaultSource = AccountSource(configDirectory: exampleHome.appendingPathComponent(".claude"), isDefault: true)
+    let workSource = AccountSource(configDirectory: exampleHome.appendingPathComponent(".claude-work"), isDefault: false)
+    let homeSource = AccountSource(configDirectory: exampleHome.appendingPathComponent(".claude-home"), isDefault: false)
+
+    // Expected values computed outside Swift: sha256("/Users/example/.claude-work")[:8].
+    equal("keychain: suffixed item for a custom dir", workSource.keychainServices, ["Claude Code-credentials-dd1118a7"])
+    equal("keychain: default dir tries the plain name first", defaultSource.keychainServices,
+          ["Claude Code-credentials", "Claude Code-credentials-402b469b"])
+    equal("metadata: default dir reads ~/.claude.json", defaultSource.metadataFile.path, "/Users/example/.claude.json")
+    equal("metadata: custom dir reads its own file", workSource.metadataFile.path, "/Users/example/.claude-work/.claude.json")
+
+    let identityJSON = #"{"oauthAccount":{"accountUuid":"a1","organizationUuid":"o1","emailAddress":"me@example.com"}}"#
+    equal("identity: parsed", AccountIdentity.parse(Data(identityJSON.utf8)),
+          AccountIdentity(accountUUID: "a1", organizationUUID: "o1", email: "me@example.com"))
+    check("identity: no oauthAccount", AccountIdentity.parse(Data(#"{"theme":"dark"}"#.utf8)) == nil)
+    check("identity: empty account id", AccountIdentity.parse(Data(#"{"oauthAccount":{"accountUuid":""}}"#.utf8)) == nil)
+
+    let me = AccountIdentity(accountUUID: "a1", organizationUUID: "o1", email: "me@example.com")
+    let meTeam = AccountIdentity(accountUUID: "a1", organizationUUID: "o2", email: "me@example.com")
+    let sameLogin = AccountDiscovery.group([defaultSource, workSource, homeSource], home: exampleHome) { source in
+        source == homeSource ? nil : me
+    }
+    equal("group: same account and org polled once", sameLogin.count, 1)
+    equal("group: both dirs kept for the token", sameLogin.first?.sources.count ?? 0, 2)
+    equal("group: labeled by email", sameLogin.first?.label ?? "", "me@example.com")
+    equal("group: another org is another limit",
+          AccountDiscovery.group([defaultSource, workSource], home: exampleHome) { $0 == workSource ? meTeam : me }.count, 2)
+    let noLogin = AccountDiscovery.group([workSource], home: exampleHome) { _ in nil }
+    equal("group: no login falls back to the default dir", noLogin.first?.sources, [defaultSource])
+
+    let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("usage-bar-checks-\(UUID().uuidString)")
+    for name in [".claude", ".claude-work", ".claude-b", ".claudette"] {
+        try? FileManager.default.createDirectory(at: scratch.appendingPathComponent(name), withIntermediateDirectories: true)
+    }
+    FileManager.default.createFile(atPath: scratch.appendingPathComponent(".claude.json").path, contents: Data("{}".utf8))
+    let found = AccountDiscovery.sources(home: scratch, configDirEnv: "/elsewhere/claude-config")
+    equal("discovery: dirs, default first, env dir added",
+          found.map(\.name), [".claude", ".claude-b", ".claude-work", "claude-config"])
+    check("discovery: only ~/.claude is default", found.filter(\.isDefault).map(\.name) == [".claude"])
+    try? FileManager.default.removeItem(at: scratch)
+
     // MARK: - Backoff
 
     equal("backoff: starts at 300", BackoffPolicy.initialBackoff, 300)
@@ -174,6 +228,15 @@ enum Checks {
     check("--api-url remote host rejected", rejects(["--api-url", "http://example.com/"]))
     check("--api-url no scheme rejected", rejects(["--api-url", "127.0.0.1:8080"]))
     check("--api-url lookalike host rejected", rejects(["--api-url", "http://127.0.0.1.example.com/"]))
+
+    equal("--mock-accounts 3", parsed(["--mock-accounts", "3"])?.mockAccounts ?? -1, 3)
+    check("--mock-accounts implies mock", parsed(["--mock-accounts", "2"])?.isMock == true)
+    check("--mock-accounts 1 never starts real mode", parsed(["--mock-accounts", "1"])?.isMock == true)
+    equal("--mock-accounts alone uses the default usage", parsed(["--mock-accounts", "2"])?.mockUtilization ?? -1, 30)
+    equal("--mock-accounts keeps --mock", parsed(["--mock", "27", "--mock-accounts", "2"])?.mockUtilization ?? -1, 27)
+    check("--mock-accounts 0 rejected", rejects(["--mock-accounts", "0"]))
+    check("--mock-accounts 5 rejected", rejects(["--mock-accounts", "5"]))
+    check("--mock-accounts without a value rejected", rejects(["--mock-accounts"]))
 
     // Cocoa-style "-Key value" pairs are left to AppKit rather than rejected.
     check("-AppleLanguages pair accepted", parsed(["-AppleLanguages", "(en)"]) != nil)

@@ -37,7 +37,7 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
   Anthropic 약관이 이를 허용하는지 확인하지 않았고, 허용하지 않을 수도 있습니다. 최신 약관을 직접 읽어 보세요. Claude 계정에 생길 수 있는 결과를 포함해 **사용에 따른 책임은 본인에게 있습니다.**
 - **요청 식별자.** 엔드포인트가 요청을 받아들이도록 앱은 Claude Code CLI와 같은 `User-Agent: claude-code/<version>`을 보냅니다. 그래서 요청이 Claude Code의 요청처럼 보입니다.
   이것이 불편하다면 앱을 쓰지 마세요.
-- **토큰 처리.** 토큰은 요청 직전에 읽어 메모리에만 두고, 로그나 파일에 쓰지 않으며, 앱이 갱신하지도 않습니다. 관련 코드는 짧습니다: `Credentials.swift`, `UsageAPI.swift`.
+- **토큰 처리.** 토큰은 요청 직전에 읽어 메모리에만 두고, 로그나 파일에 쓰지 않으며, 앱이 갱신하지도 않습니다. 관련 코드는 짧습니다: `Credentials.swift`, `Accounts.swift`(어느 키체인 항목을 읽는지), `UsageAPI.swift`.
 
 ## 개인 정보
 
@@ -45,14 +45,15 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
 
 | 항목 | 가져오는 곳 | 가는 곳 |
 |---|---|---|
-| OAuth 액세스 토큰 | Claude Code의 키체인 항목(`Claude Code-credentials`) 또는 `~/.claude/.credentials.json` | `https://api.anthropic.com/api/oauth/usage`의 `Authorization` 헤더로만 보냅니다. 메모리에만 둡니다 |
+| OAuth 액세스 토큰 | Claude Code의 키체인 항목(`Claude Code-credentials`, 그리고 `CLAUDE_CONFIG_DIR`로 쓰는 `~/.claude-*` 폴더마다 `Claude Code-credentials-<hash>`) 또는 `<폴더>/.credentials.json` | `https://api.anthropic.com/api/oauth/usage`의 `Authorization` 헤더로만 보냅니다. 메모리에만 둡니다 |
+| 계정 이메일, 계정·조직 ID | 각 폴더 `.claude.json`의 `oauthAccount`(`~/.claude`는 `~/.claude.json`) | 계정이 여러 개일 때 이메일을 계정 제목으로 보여줍니다. ID는 같은 계정으로 로그인된 폴더를 합치는 데만 씁니다. 어디로도 보내지 않습니다 |
 | 요금제(`subscriptionType`, 예: `pro`) | 같은 키체인 항목 | 배지로 보여주기만 하고 어디로도 보내지 않습니다 |
 | Claude Code 버전 | `claude --version` 실행 결과 | `User-Agent: claude-code/<version>`으로 보냅니다(중요 안내 참고) |
 | 사용량 비율과 초기화 시각 | API 응답 | 메뉴 막대와 패널에 보여줍니다. 메모리에만 둡니다 |
 
 - 코드에 있는 네트워크 목적지는 위 엔드포인트 하나뿐입니다. 테스트용 `--api-url`은 루프백 주소만 받으므로 토큰이 다른 호스트로 갈 수 없습니다.
-- 디스크에 아무것도 쓰지 않습니다. 설정, 캐시, 로그, 쿠키가 없습니다(HTTP 세션은 ephemeral). 파일을 만드는 것은 `--render-icons`의 아이콘 PNG뿐입니다. Launch at Login은 앱이 아니라 macOS가 기록합니다.
-- 토큰과 요청 헤더는 출력하지 않습니다. `--check-token`은 상태, 출처, 요금제, 남은 시간, 토큰 길이 같은 메타데이터만 출력합니다.
+- 디스크에는 설정 하나만 씁니다. 메뉴 막대에 어느 계정을 보여줄지를 앱 환경설정에 설정 폴더 이름(예: `.claude-work`)으로 저장하고, 이메일이나 ID는 저장하지 않습니다. 캐시, 로그, 쿠키는 없습니다(HTTP 세션은 ephemeral). 파일을 만드는 것은 `--render-icons`의 아이콘 PNG뿐입니다. Launch at Login은 앱이 아니라 macOS가 기록합니다.
+- 토큰과 요청 헤더는 출력하지 않습니다. `--check-token`은 설정 폴더, 상태, 출처, 요금제, 남은 시간, 토큰 길이 같은 메타데이터만 출력합니다.
 - 모든 요청이 그렇듯, Anthropic 서버는 IP 주소와 (토큰을 통해) 계정을 알 수 있습니다. Claude Code를 쓸 때와 같습니다.
 
 ## 요구 사항
@@ -63,6 +64,7 @@ claude.ai 구독 한도 중 **남은** 양(5시간 세션, 7일 주간)을 보�
 - **구독 계정으로 로그인된 Claude Code.**
   앱에는 자체 로그인이 없습니다. Claude Code가 macOS 키체인(`Claude Code-credentials`)에 저장한 OAuth 토큰을 빌려 쓰고,
   키체인에서 읽지 못하면 `~/.claude/.credentials.json`을 읽습니다.
+  `CLAUDE_CONFIG_DIR`로 로그인한 다른 계정도 폴더 이름이 `~/.claude-<아무거나>`이면 자동으로 찾습니다([여러 계정](#여러-계정) 참고).
 
 ## npx로 설치
 
@@ -117,6 +119,7 @@ Dock 아이콘은 나타나지 않습니다(`LSUIElement`).
 ### 첫 실행 때 키체인 확인 창
 
 토큰을 처음 읽을 때 키체인 접근 확인 창이 한 번 뜹니다. **"Always Allow"**(항상 허용)를 고르세요.
+계정이 여러 개면 계정 폴더의 키체인 항목마다 한 번씩 뜹니다. 답하지 않은 확인 창은 그 계정만 멈추게 합니다.
 토큰은 앱이 직접이 아니라 `/usr/bin/security`로 읽기 때문에, ad-hoc 서명된 앱을 다시 빌드해도 권한이 풀리지 않습니다.
 
 ### Launch at Login
@@ -146,6 +149,17 @@ Dock 아이콘은 나타나지 않습니다(`LSUIElement`).
 - 토큰이 만료되면 터미널에서 `claude`를 한 번 실행하세요. Claude Code가 갱신합니다.
 - 요금제 배지는 같은 키체인 항목의 `subscriptionType` 필드에서 옵니다. 문서화되지 않은 필드라 없거나 읽을 수 없으면 배지를 숨깁니다. 토큰을 처음 읽는 데 성공한 뒤에 나타납니다.
 - 요청은 같은 사용량 제한을 공유하므로 여러 개를 동시에 실행하지 마세요(같은 API를 쓰는 다른 위젯도 마찬가지입니다).
+
+### 여러 계정
+
+`CLAUDE_CONFIG_DIR`로 Claude Code 로그인을 여러 개 쓰면 앱이 계정마다 보여줍니다.
+
+- **찾는 폴더.** `~/.claude`(기본)와 모든 `~/.claude-*` 폴더, 그리고 앱이 실행될 때 받은 `CLAUDE_CONFIG_DIR`입니다. `.claude.json`에 로그인한 계정이 없는 폴더는 건너뜁니다. 수동 새로 고침 때마다 폴더를 다시 찾습니다.
+- **같은 로그인은 한 계정.** 같은 계정·조직으로 로그인된 폴더는 사용량 제한이 하나이므로 한 번만 보여주고 한 번만 조회하며, 그중 가장 늦게 만료되는 유효한 토큰을 씁니다.
+- **계정마다 따로.** 계정마다 180초 주기, 429 백오프, 안내 문구가 따로 있습니다. 한 계정의 429가 다른 계정을 멈추지 않습니다. 요청은 5초씩 간격을 둡니다. "Refresh Now"는 모든 계정이 백오프 중일 때만 비활성화됩니다.
+- **패널.** 계정마다 이메일과 요금제 배지를 제목으로 한 섹션이 있고, 섹션마다 갱신 시각이 있습니다. 계정이 하나면 패널은 예전과 같습니다.
+- **메뉴 막대.** 계정 하나만 보여줍니다. 패널의 "Menu bar"에서 **Lowest session**(기본값: 세션이 가장 적게 남은 계정)이나 특정 계정을 고릅니다.
+- `~` 밖에 있거나 이름이 다른 폴더는 앱 자체의 `CLAUDE_CONFIG_DIR`로만 찾습니다. Finder나 로그인 때 실행되면 이 값이 없습니다.
 
 ### 메뉴 막대 상태
 
@@ -183,8 +197,9 @@ Finder와 로그인 항목에 보이는 앱 아이콘은 `Resources/AppIcon.icns
 |---|---|
 | `--mock <used%>` | API를 호출하지 않고 주어진 세션 **사용** 비율을 보여줍니다(`--mock 27`은 73% 남음) |
 | `--mock-error <expired\|login\|ratelimit\|offline>` | 각 오류 상태를 보여줍니다. `--mock`과 함께 쓰면 마지막 값이 유지되는 경우를 볼 수 있습니다 |
+| `--mock-accounts <1-4>` | 가짜 계정을 그 수만큼 보여줍니다(`--mock` 포함). `--mock`과 `--mock-error`는 첫 계정에 적용됩니다 |
 | `--render-icons <dir>` | 아이콘을 AppKit으로 렌더링해 PNG로 저장합니다 |
-| `--check-token` | 토큰 상태(유효/만료/없음, 출처, 요금제, 남은 시간)만 출력하고, 토큰 자체는 출력하지 않습니다 |
+| `--check-token` | 토큰 상태(유효/만료/없음, 출처, 요금제, 남은 시간)만 설정 폴더마다 한 줄씩 출력하고, 토큰 자체는 출력하지 않습니다 |
 | `--api-url <url>` | 요청을 로컬 서버(`127.0.0.1`, `localhost`, `::1`)로 보냅니다. 테스트용입니다 |
 | `--help` | 사용법을 출력합니다 |
 
@@ -209,6 +224,7 @@ Sources/ClaudeUsageBar/
   UsageStore.swift     state, polling loop, backoff handling
   UsageAPI.swift       endpoint call, response parsing, backoff policy, User-Agent
   Credentials.swift    token reading, expiry check
+  Accounts.swift       finds ~/.claude* folders, keychain item names, merges folders of one login
   IconProvider.swift   picks/loads/caches the SVG for the remaining amount, --render-icons
   PopoverView.swift    the panel shown on click
 Resources/Info.plist, Resources/icons/ (menu bar), Resources/AppIcon.icns, Resources/app-icon.svg (app icon)

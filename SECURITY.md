@@ -12,7 +12,7 @@ This is a personal project with one maintainer and no service behind it. There i
 
 The app uses the OAuth access token that Claude Code stores in your keychain. That token grants access to your Claude account.
 
-- Never paste a token, a `Claude Code-credentials` keychain entry, a `~/.claude/.credentials.json` file, or an `Authorization` header into an issue, a pull request, a report, or a screenshot.
+- Never paste a token, a `Claude Code-credentials` (or `Claude Code-credentials-<hash>`) keychain entry, a `.credentials.json` file from any `~/.claude*` folder, or an `Authorization` header into an issue, a pull request, a report, or a screenshot.
 - The app is built so this is hard to do by accident: it never writes the token to logs or files, and `--check-token` prints only metadata (state, source, plan, time left, token length). Use that output instead of the token itself.
 - If you think a token has been exposed, sign out and back in with `claude` so Claude Code issues a new one. This app cannot refresh or revoke tokens.
 
@@ -26,7 +26,7 @@ The app uses the OAuth access token that Claude Code stores in your keychain. Th
 ## What is not a vulnerability here
 
 - **Using an unofficial endpoint and Claude Code's token outside Claude Code.** This is what the app does by design, and the risk is described in the README's Important notices. Anthropic's terms may not allow it.
-- **The keychain prompt on first run**, and the "Always Allow" choice it offers.
+- **The keychain prompt on first run** (one per account folder when there are several accounts), and the "Always Allow" choice it offers.
 - **Rate limiting (HTTP 429)** from running several clients against the same limit.
 - Reports about Anthropic's own services. Send those to Anthropic, not here.
 

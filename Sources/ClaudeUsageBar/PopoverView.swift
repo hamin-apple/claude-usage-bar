@@ -10,49 +10,46 @@ struct PopoverView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("Claude Limits Remaining").font(.headline)
                 Spacer()
-                if let plan = store.plan {
-                    Text(PlanName.display(plan))
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.quaternary, in: Capsule())
+                if !store.isMultiAccount, let plan = store.accounts.first?.plan {
+                    PlanBadge(plan: plan)
                 }
             }
 
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                VStack(alignment: .leading, spacing: 12) {
-                    if store.rows.isEmpty && store.status == .loading {
-                        Text("Loading…").foregroundStyle(.secondary)
-                    }
-                    ForEach(store.rows) { row in
-                        LimitRowView(row: row, now: context.date)
-                    }
+            if store.isMultiAccount {
+                ForEach(Array(store.accounts.enumerated()), id: \.element.id) { index, usage in
+                    if index > 0 { Divider() }
+                    AccountSection(usage: usage, showsHeader: true)
                 }
-            }
-
-            if let notice = store.status.notice {
-                Text(notice)
-                    .font(.callout)
-                    .foregroundStyle(store.status.isWarning ? Color.orange : Color.red)
-                    .fixedSize(horizontal: false, vertical: true)
+            } else if let usage = store.accounts.first {
+                AccountSection(usage: usage, showsHeader: false)
             }
 
             Divider()
 
-            HStack {
-                if let updated = store.lastUpdated {
-                    Text("Last updated \(TimeFormat.clock(updated))")
-                } else {
-                    Text("Not updated yet")
+            if store.isMultiAccount {
+                Picker("Menu bar", selection: Binding(get: { store.pickerSelection }, set: { store.menuBarChoice = $0 })) {
+                    Text("Lowest session").tag(UsageStore.lowestChoice)
+                    ForEach(store.accounts) { usage in
+                        Text(usage.account.label).tag(usage.account.sources.first?.name ?? usage.id)
+                    }
                 }
-                Spacer()
+                .controlSize(.small)
+            } else {
+                HStack {
+                    if let updated = store.accounts.first?.lastUpdated {
+                        Text("Last updated \(TimeFormat.clock(updated))")
+                    } else {
+                        Text("Not updated yet")
+                    }
+                    Spacer()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
-            .font(.caption)
-            .foregroundStyle(.secondary)
 
             HStack {
-                Button(store.isBackingOff ? "Waiting…" : "Refresh Now") { store.refresh() }
-                    .disabled(store.isBackingOff)
+                Button(store.allBackingOff ? "Waiting…" : "Refresh Now") { store.refresh() }
+                    .disabled(store.allBackingOff)
                 Spacer()
                 Button("Quit") { NSApplication.shared.terminate(nil) }
             }
@@ -65,21 +62,86 @@ struct PopoverView: View {
     }
 }
 
+// One account's rows and notice. With several accounts it gets a header (label, plan) and its own update time.
+struct AccountSection: View {
+    @ObservedObject var usage: AccountUsage
+    let showsHeader: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: showsHeader ? 8 : 12) {
+            if showsHeader {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(usage.account.label)
+                        .font(.subheadline.weight(.semibold))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer()
+                    if let plan = usage.plan { PlanBadge(plan: plan) }
+                }
+            }
+
+            TimelineView(.periodic(from: .now, by: 60)) { context in
+                VStack(alignment: .leading, spacing: showsHeader ? 8 : 12) {
+                    if usage.rows.isEmpty && usage.status == .loading {
+                        Text("Loading…").foregroundStyle(.secondary)
+                    }
+                    ForEach(usage.rows) { row in
+                        LimitRowView(row: row, now: context.date, compact: showsHeader)
+                    }
+                }
+            }
+
+            if let notice = usage.status.notice(configFolder: showsHeader ? usage.account.sources.first : nil) {
+                Text(notice)
+                    .font(.callout)
+                    .foregroundStyle(usage.status.isWarning ? Color.orange : Color.red)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if showsHeader {
+                Text(usage.lastUpdated.map { "Updated \(TimeFormat.clock($0))" } ?? "Not updated yet")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+struct PlanBadge: View {
+    let plan: String
+
+    var body: some View {
+        Text(PlanName.display(plan))
+            .font(.caption2.weight(.semibold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: Capsule())
+    }
+}
+
+// Compact (several accounts) puts the reset time on the title line to keep the panel on screen.
 struct LimitRowView: View {
     let row: LimitRow
     let now: Date
+    var compact = false
 
     var body: some View {
         let remaining = row.remaining(at: now)
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        VStack(alignment: .leading, spacing: compact ? 2 : 4) {
+            HStack(alignment: .firstTextBaseline) {
                 Text(row.title)
+                if compact, let resetsAt = row.resetsAt {
+                    Text(ResetText.format(until: resetsAt, now: now))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
                 Spacer()
                 Text(remaining.map { "\(Int($0.rounded()))% left" } ?? "–").monospacedDigit()
             }
             ProgressView(value: (remaining ?? 0) / 100)
                 .tint((remaining ?? 100) <= 20 ? .red : .accentColor)
-            if let resetsAt = row.resetsAt {
+            if !compact, let resetsAt = row.resetsAt {
                 Text(ResetText.format(until: resetsAt, now: now))
                     .font(.caption)
                     .foregroundStyle(.secondary)

@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 
 enum UsageStatus: Equatable {
@@ -17,6 +18,16 @@ enum UsageStatus: Equatable {
         }
     }
 
+    // A non-default folder's token is refreshed only by running claude with that folder.
+    func notice(configFolder: AccountSource?) -> String? {
+        guard let folder = configFolder, !folder.isDefault else { return notice }
+        switch self {
+        case .expired: return "Token expired. Run \"CLAUDE_CONFIG_DIR=~/\(folder.name) claude\" once in Terminal to refresh it."
+        case .loginRequired: return "Sign in with \"CLAUDE_CONFIG_DIR=~/\(folder.name) claude\"."
+        default: return notice
+        }
+    }
+
     var notice: String? {
         switch self {
         case .loading, .ok: return nil
@@ -30,7 +41,7 @@ enum UsageStatus: Equatable {
 }
 
 @MainActor
-final class UsageStore: ObservableObject {
+final class AccountUsage: ObservableObject, Identifiable {
     private static let minManualInterval: TimeInterval = 10
 
     @Published private(set) var status: UsageStatus = .loading
@@ -38,7 +49,10 @@ final class UsageStore: ObservableObject {
     @Published private(set) var lastUpdated: Date?
     @Published private(set) var plan: String?
 
+    private(set) var account: Account
     private let options: LaunchOptions
+    private let startDelay: TimeInterval
+    private let mockIndex: Int
     private var policy = BackoffPolicy()
     private var pollTask: Task<Void, Never>?
     private var nextPollAt = Date.distantPast
@@ -47,8 +61,15 @@ final class UsageStore: ObservableObject {
     private var lastCallAt: Date?
     private var wakeObserver: NSObjectProtocol?
 
-    init(options: LaunchOptions) {
+    nonisolated let id: String
+
+    init(account: Account, options: LaunchOptions, startDelay: TimeInterval = 0, mockIndex: Int = 0) {
+        self.id = account.id
+        self.account = account
         self.options = options
+        self.startDelay = startDelay
+        self.mockIndex = mockIndex
+        nextPollAt = Date().addingTimeInterval(startDelay)
     }
 
     var sessionRow: LimitRow? { rows.first { $0.id == "five_hour" } }
@@ -72,6 +93,18 @@ final class UsageStore: ObservableObject {
         runLoop()
     }
 
+    // Same login, different directories (one was added or removed): keep the backoff and the data.
+    func update(_ account: Account) {
+        self.account = account
+    }
+
+    func stop() {
+        pollTask?.cancel()
+        pollTask = nil
+        if let wakeObserver { NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver) }
+        wakeObserver = nil
+    }
+
     // Manual refresh is ignored during a 429 backoff: retrying would only extend the limit.
     func refresh() {
         if options.isMock {
@@ -80,7 +113,7 @@ final class UsageStore: ObservableObject {
         }
         guard !isBackingOff, !isPolling else { return }
         if let last = lastCallAt, Date().timeIntervalSince(last) < Self.minManualInterval { return }
-        nextPollAt = .distantPast
+        nextPollAt = Date().addingTimeInterval(startDelay)
         runLoop()
     }
 
@@ -117,7 +150,7 @@ final class UsageStore: ObservableObject {
             nextPollAt = until
             return
         }
-        switch await CredentialsReader.read() {
+        switch await CredentialsReader.read(account) {
         case .notFound:
             status = .loginRequired
             scheduleNormalPoll()
@@ -164,10 +197,12 @@ final class UsageStore: ObservableObject {
         nextPollAt = Date().addingTimeInterval(BackoffPolicy.normalInterval)
     }
 
+    // Mock accounts after the first get fixed values; --mock-error applies to the first account only.
     private func applyMock() {
         let now = Date()
-        plan = "pro"
-        if let used = options.mockUtilization {
+        plan = mockIndex == 1 ? "pro" : "max"
+        let sessionUsed: Double? = mockIndex == 0 ? options.mockUtilization : [62, 8, 95][(mockIndex - 1) % 3]
+        if let used = sessionUsed {
             rows = [
                 LimitRow(id: "five_hour", title: "Session (5h)", utilization: used,
                          resetsAt: now.addingTimeInterval(2 * 3600 + 44 * 60)),
@@ -178,12 +213,95 @@ final class UsageStore: ObservableObject {
             ]
             lastUpdated = now
         }
-        switch options.mockError {
+        switch mockIndex == 0 ? options.mockError : nil {
         case .expired: status = .expired
         case .login: status = .loginRequired
         case .ratelimit: status = .rateLimited
         case .offline: status = .offline(httpStatus: nil)
         case nil: status = .ok
         }
+    }
+}
+
+// All accounts, plus which one the menu bar shows.
+@MainActor
+final class UsageStore: ObservableObject {
+    static let lowestChoice = "lowest"
+    private static let choiceKey = "menuBarAccount"
+    private static let pollSpacing: TimeInterval = 5
+    private static let mockLabels = ["you@example.com", "work@example.com", "team@example.com", "lab@example.com"]
+
+    @Published private(set) var accounts: [AccountUsage] = []
+    @Published var menuBarChoice: String {
+        didSet { UserDefaults.standard.set(menuBarChoice, forKey: Self.choiceKey) }
+    }
+
+    private let options: LaunchOptions
+    private var forwarders: [String: AnyCancellable] = [:]
+
+    init(options: LaunchOptions) {
+        self.options = options
+        menuBarChoice = UserDefaults.standard.string(forKey: Self.choiceKey) ?? Self.lowestChoice
+    }
+
+    var isMultiAccount: Bool { accounts.count > 1 }
+
+    // The pinned account if it still exists, otherwise the one with the least session left.
+    // The choice is stored as a config folder name (e.g. ".claude-work"), never an account id or email.
+    var menuBarAccount: AccountUsage? {
+        if let pinned = accounts.first(where: { $0.account.sources.contains { $0.name == menuBarChoice } }) { return pinned }
+        return accounts
+            .filter { $0.remaining != nil }
+            .min { ($0.remaining ?? 0) < ($1.remaining ?? 0) } ?? accounts.first
+    }
+
+    // A stored folder that no longer exists shows as "Lowest session", which is what the menu bar uses then.
+    var pickerSelection: String {
+        accounts.contains { $0.account.sources.contains { $0.name == menuBarChoice } } ? menuBarChoice : Self.lowestChoice
+    }
+
+    var allBackingOff: Bool { !accounts.isEmpty && accounts.allSatisfy(\.isBackingOff) }
+
+    func start() {
+        // Mock mode never discovers accounts: discovery reads the keychain.
+        if options.isMock {
+            let count = options.mockAccounts
+            set((0..<count).map { index in
+                let label = count == 1 ? ".claude" : Self.mockLabels[index % Self.mockLabels.count]
+                let source = AccountSource(configDirectory: URL(fileURLWithPath: "/mock/.claude-\(index)"), isDefault: index == 0)
+                return Account(id: "mock-\(index)", label: label, sources: [source])
+            })
+            return
+        }
+        set(AccountDiscovery.discover())
+    }
+
+    // Re-discovers accounts (a new login may have appeared), then refreshes each one not backing off.
+    func refresh() {
+        if !options.isMock { set(AccountDiscovery.discover()) }
+        accounts.forEach { $0.refresh() }
+    }
+
+    private func set(_ discovered: [Account]) {
+        let existing = Dictionary(uniqueKeysWithValues: accounts.map { ($0.id, $0) })
+        var next: [AccountUsage] = []
+        for (index, account) in discovered.enumerated() {
+            if let kept = existing[account.id] {
+                kept.update(account)
+                next.append(kept)
+                continue
+            }
+            // Requests are spaced out so several accounts never hit the endpoint at the same moment.
+            let usage = AccountUsage(account: account, options: options,
+                                     startDelay: Double(index) * Self.pollSpacing, mockIndex: index)
+            forwarders[account.id] = usage.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+            usage.start()
+            next.append(usage)
+        }
+        for gone in accounts where !next.contains(where: { $0 === gone }) {
+            gone.stop()
+            forwarders[gone.id] = nil
+        }
+        accounts = next
     }
 }
